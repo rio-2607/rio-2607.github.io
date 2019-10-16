@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Redis,Jedis,SpringBoot,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景上周四晚上，月黑风高Coding夜，在公司的角落里，埋头研究研究webflux，组里的同事小D过来说碰到一个诡异的Redis的问题： 在UT(单元测试)中，通过Jedis的client执行lua脚本，每次都是lua脚本正常执行正常返回，但是Redis服务器挂了，执行其他的命令（非lua脚本）就没这个问题。client连接的是开发环境的Redis服务器，版本是2.8。但是连接本地启动的Redis">
+<meta name="keywords" content="Redis,Jedis,SpringBoot">
+<meta property="og:type" content="article">
+<meta property="og:title" content="这个Jedis的坑你肯定没踩过！记一次深坑排查过程">
+<meta property="og:url" content="http://yoursite.com/2019/03/11/这个Jedis的坑你肯定没踩过！记一次深坑排查过程/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="背景上周四晚上，月黑风高Coding夜，在公司的角落里，埋头研究研究webflux，组里的同事小D过来说碰到一个诡异的Redis的问题： 在UT(单元测试)中，通过Jedis的client执行lua脚本，每次都是lua脚本正常执行正常返回，但是Redis服务器挂了，执行其他的命令（非lua脚本）就没这个问题。client连接的是开发环境的Redis服务器，版本是2.8。但是连接本地启动的Redis">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c837b9b77816.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c837c0aac7a4.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c837d13e01d4.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c83838787257.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c8387353553c.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c838e0cacc27.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c83a1730771d.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c83a6f0dcf42.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c83b0bd9d50c.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c83b237e439a.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c83b7f5d656b.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/09/5c83b88ed7f4d.png">
+<meta property="og:updated_time" content="2019-03-11T05:55:34.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="这个Jedis的坑你肯定没踩过！记一次深坑排查过程">
+<meta name="twitter:description" content="背景上周四晚上，月黑风高Coding夜，在公司的角落里，埋头研究研究webflux，组里的同事小D过来说碰到一个诡异的Redis的问题： 在UT(单元测试)中，通过Jedis的client执行lua脚本，每次都是lua脚本正常执行正常返回，但是Redis服务器挂了，执行其他的命令（非lua脚本）就没这个问题。client连接的是开发环境的Redis服务器，版本是2.8。但是连接本地启动的Redis">
+<meta name="twitter:image" content="https://i.loli.net/2019/03/09/5c837b9b77816.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/03/11/这个Jedis的坑你肯定没踩过！记一次深坑排查过程/">
+
+
+
+
+
+  <title>这个Jedis的坑你肯定没踩过！记一次深坑排查过程 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/11/这个Jedis的坑你肯定没踩过！记一次深坑排查过程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">这个Jedis的坑你肯定没踩过！记一次深坑排查过程</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-11T13:55:34+08:00">
+                2019-03-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/经验教训/" itemprop="url" rel="index">
+                    <span itemprop="name">经验教训</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/11/这个Jedis的坑你肯定没踩过！记一次深坑排查过程/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/03/11/这个Jedis的坑你肯定没踩过！记一次深坑排查过程/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>上周四晚上，月黑风高Coding夜，在公司的角落里，埋头研究研究webflux，组里的同事小D过来说碰到一个诡异的Redis的问题：</p>
+<p>在UT(单元测试)中，通过Jedis的client执行lua脚本，每次都是lua脚本正常执行正常返回，但是Redis服务器挂了，执行其他的命令（非lua脚本）就没这个问题。client连接的是开发环境的Redis服务器，版本是2.8。但是连接本地启动的Redis服务器（5.x版本）就不会出现这个情况。</p>
+<p>没有查到什么原因，找我帮忙一块看下。</p>
+<p>作为一个有技术追求的人，碰到这种诡异的问题，果断不会错过研究的机会的。</p>
+<p>这个问题花了好几个小时才查到，期间走了不少弯路，这篇文章记录下整个问题的排查过程。</p>
+<h2 id="复现"><a href="#复现" class="headerlink" title="复现"></a>复现</h2><p>碰到诡异(神奇)的问题，首先就是要想办法复现。只要是能稳定复现的问题，肯定是能查到原因的，只是有些问题可能花的时间比较长而已。对于不能稳定复现的问题，那就只能通过log等方式记录案发现场了然后根据记录的现场进行排查了。</p>
+<p>幸好这次这个问题是百分百复现的.</p>
+<p>首先看UT的代码，如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SpringBootTest</span>(classes = ApplicationStarter.class, properties = &#123;<span class="string">"spring.profiles.active=test"</span>&#125;)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LuaServiceTest</span> <span class="keyword">extends</span> <span class="title">AbstractTestNGSpringContextTests</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> Jedis jedis;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testExecuteLuaScript</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        String skuId = <span class="string">"1234567"</span>;</span><br><span class="line">        String phone = <span class="string">"1234567"</span>;</span><br><span class="line">        String orderId = <span class="string">"123456"</span>;</span><br><span class="line">        String countKey = RedisHelper.key(skuId, phone, <span class="string">"count"</span>);</span><br><span class="line">        String orderKey = RedisHelper.key(skuId, phone, <span class="string">"order"</span>);</span><br><span class="line">        Object result = jedis.eval(LuaScript.DECREASE_COUNT, Arrays.asList(countKey, orderKey), Arrays.asList(orderId, <span class="string">"100"</span>));</span><br><span class="line">        System.out.println(<span class="string">"evel result is "</span>  + result.toString());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码很简单，生成redis的key和参数，然后直接调用<code>jedis.eval()</code>方法执行预先写好的lua脚本，lua脚本如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">local countKey=KEYS[1];</span><br><span class="line">local orderKey=KEYS[2];</span><br><span class="line">local orderId=ARGV[1];</span><br><span class="line">local count= tonumber(redis.call(&apos;get&apos;,countKey) or 0);</span><br><span class="line">if (count&lt;1) then</span><br><span class="line">    return -1;</span><br><span class="line">end</span><br><span class="line">local orderIds=tostring(redis.call(&apos;get&apos;,orderKey) or &apos;&apos;);</span><br><span class="line">local i,j=string.find(orderIds,orderId);</span><br><span class="line">if(i==nil) then</span><br><span class="line">    return 0;</span><br><span class="line">end</span><br><span class="line">local newOrderIds=string.gsub(orderIds,&apos;_&apos;..orderId,&apos;&apos;);</span><br><span class="line">redis.call(&apos;set&apos;,orderKey,newOrderIds);</span><br><span class="line">redis.call(&apos;decr&apos;,countKey);</span><br><span class="line">return 1;</span><br></pre></td></tr></table></figure>
+<p>lua代码看过去也没啥问题，然后开始测试，测试结果输出如下：</p>
+<p><img src="https://i.loli.net/2019/03/09/5c837b9b77816.png" alt="ut.png"></p>
+<p>表明ut正常执行通过(先不管执行结果对不对，整个流程是通的就OK)。</p>
+<p>再来看Redis服务器的日志：</p>
+<p><img src="https://i.loli.net/2019/03/09/5c837c0aac7a4.png" alt="redis.png"></p>
+<p>从Redis日志输出看Redis进程的确已经结束了。</p>
+<p>好，已复现。</p>
+<h2 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h2><p>既然已经复现了，那可以来排查了。</p>
+<h3 id="第一次排查"><a href="#第一次排查" class="headerlink" title="第一次排查"></a><strong>第一次排查</strong></h3><p>首先看下Redis服务器这边的输出日志，日志里面有一句很明显的线索：</p>
+<p><img src="https://i.loli.net/2019/03/09/5c837d13e01d4.png" alt="redis2.png"></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[34238] 09 Mar 16:37:56.035 # User requested shutdown...</span><br></pre></td></tr></table></figure>
+<p>意思很明显，是用户自己请求关闭的。</p>
+<p>难道是代码里面主动关闭的？</p>
+<p>重新回去看下Jedis的源码，Jedis里面的确有个方法名叫<code>shutdown</code>的方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">shutdown</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	client.shutdown();</span><br><span class="line">	String status = <span class="keyword">null</span>;</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">	    status = client.getStatusCodeReply();</span><br><span class="line">	&#125; <span class="keyword">catch</span> (JedisException ex) &#123;</span><br><span class="line">	    status = <span class="keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> status;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>client.shutdown()</code>方法的底层实现是给Redis服务器发送<code>shutdown</code>命令(<strong>只有<code>shutdown()</code>这一个方法能够发送<code>shutdown</code>命令给服务器</strong>)：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">shutdown</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  sendCommand(SHUTDOWN);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这的确是会导致Redis服务器关闭，</p>
+<p>回去重头重新看了下ut的代码，没有看到任何地方有<code>jedis.shutdown()</code>方法，且在项目里面全局搜了下，也没有搜到任何其他地方调用<code>shutdown()</code>方法，此时脑子里面就有了一个潜意识：</p>
+<p><strong>既然我代码里面没有显示调用<code>shutdown()</code>，jedis客户端也不可能莫名其妙的去给我调用<code>shutdown()</code>吧？那肯定不是不是client发送的。</strong></p>
+<p>要确认是不是client发送了<code>shutdown</code>命令，只需要去Redis服务器上看下到底有没有接收到<code>shutdown</code>命令吧，查了下，Redis提供了了<code>monitor</code>命令，可以查看服务器处理的每一个命令.重新启动Redis服务器，通过<code>redis-cli</code>连接服务器，并执行<code>monitor</code>命令，然后重新启动UT执行，<code>monitor</code>输出结果如下：</p>
+<p><img src="https://i.loli.net/2019/03/09/5c83838787257.png" alt="monitor.png"></p>
+<p>可以看到，<strong>并没有输出<code>shutdown</code>命令，所以更加坚信客户端并没有发送<code>shutdown</code>命令</strong>。</p>
+<p>此时已经认定了客户端没有什么问题，那么只有可能是Redis服务器的问题了，现在来服务端排查下：</p>
+<p>服务端的信息很有限，目前获取到的有用的信息只有<code># User requested shutdown...</code>这一句话了。那就根据这句话来排查吧。</p>
+<p>首先在Redis的源码里面全局搜索<code>User requested shutdown...</code>这句话，在<code>prepareForShutdown()</code>方法中搜到了这句话:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">prepareForShutdown</span><span class="params">(<span class="keyword">int</span> flags)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> save = flags &amp; SHUTDOWN_SAVE;</span><br><span class="line">    <span class="keyword">int</span> nosave = flags &amp; SHUTDOWN_NOSAVE;</span><br><span class="line"></span><br><span class="line">    serverLog(LL_WARNING,<span class="string">"User requested shutdown..."</span>);</span><br><span class="line">    <span class="comment">// 其他省略代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看方法名是在Redis服务器准备shutdown的时候调用的，接着查看下是在哪里调用了<code>prepareForShutdown()</code>这个方法，查找结果如下：</p>
+<p><img src="https://i.loli.net/2019/03/09/5c8387353553c.png" alt="shutdown.png"></p>
+<p>Redis源码中有两处调用到了这个函数，第一次是在<code>serverCron()</code>研究过Redis源码的同学应该都知道这个方法是干嘛的`方法里面：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">serverCron</span><span class="params">(struct aeEventLoop *eventLoop, <span class="keyword">long</span> <span class="keyword">long</span> id, <span class="keyword">void</span> *clientData)</span> </span>&#123;</span><br><span class="line">	  <span class="comment">// 其他省略代码</span></span><br><span class="line">     <span class="comment">/* We received a SIGTERM, shutting down here in a safe way, as it is</span></span><br><span class="line"><span class="comment">     * not ok doing so inside the signal handler. */</span></span><br><span class="line">    <span class="keyword">if</span> (server.shutdown_asap) &#123;</span><br><span class="line">        <span class="keyword">if</span> (prepareForShutdown(SHUTDOWN_NOFLAGS) == C_OK) exit(<span class="number">0</span>);</span><br><span class="line">        serverLog(LL_WARNING,<span class="string">"SIGTERM received but errors trying to shut down the server, check the logs for more information"</span>);</span><br><span class="line">        server.shutdown_asap = <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 其他省略代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第二处是在<code>restartServer()</code>方法中:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">int restartServer(int flags, mstime_t delay) &#123;</span><br><span class="line"></span><br><span class="line">    // 其他省略代码</span><br><span class="line"></span><br><span class="line">    /* Perform a proper shutdown. */</span><br><span class="line">    if (flags &amp; RESTART_SERVER_GRACEFULLY &amp;&amp;</span><br><span class="line">        prepareForShutdown(SHUTDOWN_NOFLAGS) != C_OK)</span><br><span class="line">    &#123;</span><br><span class="line">        serverLog(LL_WARNING,&quot;Can&apos;t restart: error preparing for shutdown&quot;);</span><br><span class="line">        return C_ERR;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 其他省略代码</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>既然只有这两个地方会调用到这个方法，那我就在这两处加断点，心想肯定会执行到吧。</p>
+<p>好，加断点，启动UT，走你，见证奇迹的时候到了。</p>
+<p>诶，什么情况， Redis日志都输出<code>User requested shutdown...</code>并且关闭了，断点都没进来！！</p>
+<p>这不科学吧，见鬼了！！内心简直要抓狂！</p>
+<p>接下来该怎么排查呢？</p>
+<p>小D反馈的信息是连接开发机上的Redis服务器执行lua脚本就会出现这个问题，连接本地的Redis就不会有问题，且只有在执行lua脚本的情况下会出现这个问题。</p>
+<p>这里有两个关键点：</p>
+<ol>
+<li>版本不同。开发机上面运行的Redis的版本是2.8.11，本机的Redis版本是5.x。</li>
+<li>只有在执行lua脚本的猜出出现这个问题。</li>
+</ol>
+<p>突然灵光一闪（实际上是宇神提醒的）：可以去Github上看Redis版本的<code>Release Note</code>，说不定能发现什么。</p>
+<p>说干就干，找到Redis的<a href="https://raw.githubusercontent.com/antirez/redis/2.8/00-RELEASENOTES" target="_blank" rel="noopener">RELEASE NOTE</a>:<br>在页面上全局搜索lua关键字，还真搜出点东西来了</p>
+<p><img src="https://i.loli.net/2019/03/09/5c838e0cacc27.png" alt="lua.png"></p>
+<p>在2.8.14版本中修复了一个lua脚本引起的Redis crash的问题：当lua脚本第一次分配的时候如果保存了argv的长度就会引起crash。这个bug是2.8、10引起来的。</p>
+<p>跟这个问题情况很像啊：版本是2.8.11，应该存在这个bug，且lua脚本的确引用了<code>argv</code>参数，查了半天该不会是redis本身的bug吧。</p>
+<p>(心里暗爽：要真是查出了redis的bug，虽然是老版本中且已经修复了的，那还是有的吹的：某年某月某时，在跟Antirez神交之后，指出了他曾经犯过的错~~ 而且Antirez太’卑鄙’了，明明是crash了，还非要说是用户自己关闭的！哼！)</p>
+<p>然后我就跟小D说，有可能是redis本身的bug引起的，你升一哈版本再看下复现。</p>
+<p>然后就下班了，第一次排查到此结束。</p>
+<h3 id="第二次排查"><a href="#第二次排查" class="headerlink" title="第二次排查"></a><strong>第二次排查</strong></h3><p>第二天下午的时候，小D来给我说，升了版本也不行，而且现在连接本启动的Redis 5.x的版本也不行，执行完之后服务器一样会被关闭。</p>
+<p>额，这。。。这消息跟之前的不太一样啊，我心里这么想着。</p>
+<p>这样啊，那咱们得继续排查了。先总结下当前的线索吧：</p>
+<ol>
+<li>在ut里面使用Jedis客户端连接Redis服务器执行lua脚本，脚本正常执行，正常返回。然后Redis服务器会打印出<code>User requested shutdown...</code>并关闭。</li>
+<li>1中描述的行为跟Redis版本没关系，最新的5.x版本也是会出现一样的情况。</li>
+<li>已经排查到客户端不会给服务器发送<code>shutdown</code>命令。</li>
+<li>只有在执行lua脚本的时候才会出现这个情况。</li>
+</ol>
+<p>第一点和第二点是已经确定的现象，第三点是昨天排查得到的结论，第四点是从小D那得到的信息。</p>
+<p>前面两点是确认的，后面两点还是在确认下。</p>
+<p>首先是第三点：要确认客户端到底有没有发出<code>shutdown</code>命令。有两种方式可以确认：</p>
+<ol>
+<li>在客户端机器上面通过tcpdump命令查看客户端发出去的报文中有没有<code>shutdown</code>数据。</li>
+<li>排查Redis服务器到底有没有收到<code>shutdown</code>命令。可以在Redis服务器上在<code>SHUTDOWN</code>命令执行的地方断点，看断点能否进来。如果能进来，说明的确是客户端发送了<code>shutdown</code>命令。(第一次排查是通过<code>monitor</code>命令的，这样是有问题的，后面会提到)。</li>
+</ol>
+<p>选择第二种方式：在<code>shutdownCommand()</code>函数入口加断点，重新执行ut：</p>
+<p>进了！进了！国足进球了！（黄健翔附体）</p>
+<p>不好意思，串场了！</p>
+<p><code>shutdownCommand()</code>方法的断点进来了!</p>
+<p><img src="https://i.loli.net/2019/03/09/5c83a1730771d.png" alt="shutdownCommand.png"></p>
+<p>说明<strong>客户端的确发送了<code>shutdown</code>命令</strong>。</p>
+<p>看<code>shutdownCommand()</code>方法实现，里面明明有调用<code>prepareForShutdown()</code>方法，那为啥昨天第一次排查的时候查找哪些地方调用了<code>prepareForShutdown()</code>方法的时候没有搜到<code>shutdownCommand()</code>呢？</p>
+<p>排查了一下Redis的源码发现：</p>
+<ol>
+<li><code>server.h</code>文件中声明了方法<code>int prepareForShutdown();</code>。这个方法没有带参数。</li>
+<li><code>server.c</code>中实现了方法<code>int prepareForShutdown(int flags)</code>。这个方法实际上是个重载的方法。</li>
+<li><code>shutdownCommand()</code>方法是在<code>db.c</code>文件中实现的。<code>db.c</code>引入了<code>db.h</code>头文件，<code>db.h</code>中引入了<code>server.h</code>头文件。</li>
+</ol>
+<p>在<code>IDE(CLion)</code>看来，<code>db.c</code>中的<code>shutdownCommand()</code>实际上调用的是<code>server.h</code>中声明的不带参数的<code>prepareForShutdown()</code>方法。</p>
+<p><img src="https://i.loli.net/2019/03/09/5c83a6f0dcf42.png" alt="sd.png"></p>
+<p>所以昨天搜多哪些地方调用了<code>server.c</code>中实现的<code>shutdownCommand(flag)</code>方法时没有搜到<code>shutdownCommand()</code>方法。</p>
+<p>其实，这里我有个疑惑：根据我已经过期了的C/C++的知识判断，我觉得这里应该会报错吧，在头文件中声明了<code>int prepareForShutdown()</code>方法，但是从头到尾都都没有实现，难道不应该报错吗？为啥还能正常的运行?求大神解答！</p>
+<p>到目前为止，已经确定了客户端的确是发送了<code>shutdown</code>命令，那么就跟Redis服务器没啥关系了，Redis服务器只是正常的执行客户端的请求（所以跟Redis的版本没有任何关系）。</p>
+<p>那现在着重来看下客户端的代码了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SpringBootTest</span>(classes = ApplicationStarter.class, properties = &#123;<span class="string">"spring.profiles.active=test"</span>&#125;)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LuaServiceTest</span> <span class="keyword">extends</span> <span class="title">AbstractTestNGSpringContextTests</span> </span>&#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> Jedis jedis;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Test</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">testExecuteLuaScript</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        String skuId = <span class="string">"1234567"</span>;</span><br><span class="line">        String phone = <span class="string">"1234567"</span>;</span><br><span class="line">        String orderId = <span class="string">"123456"</span>;</span><br><span class="line">        String countKey = RedisHelper.key(skuId, phone, <span class="string">"count"</span>);</span><br><span class="line">        String orderKey = RedisHelper.key(skuId, phone, <span class="string">"order"</span>);</span><br><span class="line">        System.out.println(<span class="string">"&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; begin eval"</span>);</span><br><span class="line">        Object result = jedis.eval(LuaScript.DECREASE_COUNT, Arrays.asList(countKey, orderKey), Arrays.asList(orderId, <span class="string">"100"</span>));</span><br><span class="line">        System.out.println(<span class="string">"&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt; evel result is "</span>  + result.toString());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>排查问题的最高境界就是人肉debug：只要看代码就能看出问题所在。</p>
+<p>在盯着这段代码苦思冥想几分钟后，我终于得出了一个结论：</p>
+<p>恩，我还没这水平。<em>-_-</em></p>
+<p>既然肉眼不行，那就只有手动debug了。</p>
+<p>当前确认且正确的线索是：</p>
+<ol>
+<li>客户端的lua代码正常执行、正常返回。</li>
+<li>服务器能正常接收lua脚本，正常执行，返回。</li>
+<li>客户端不知道什么时候给服务器发送了<code>shutdown</code>命令。</li>
+<li>服务器接收<code>shutdown</code>命令，持久化并关闭服务器。</li>
+<li>客户端代码没有显示的给调用<code>jedis.shutdown()</code>给服务器发送<code>SHUTDOWN</code>命令。</li>
+</ol>
+<p>根据上面的线索：既然自己没有调用<code>jedis.shutdown()</code>，那么肯定是其他地方调用了<code>jedis.shutdown()</code>方法。现在需要确认的就是在谁在什么时候在哪里调用的<code>jedis.shutdown()</code>。</p>
+<p>还有一点可已确认的是，<strong><code>jedis.shutdown()</code>方法肯定是在<code>jedis.eval()</code>之后被调用的</strong>。</p>
+<p>现在可以debug了。首先在执行<code>testExecuteLuaScript()</code>方法的最后一行打断点(断点A)，然后是在<code>jedis.shutdown()</code>(<code>BinaryJedis.java</code>文件中)打断点(断点B)。</p>
+<p>启动程序， 首先执行到断点A，<code>eval()</code>正常返回，按照我的预期，这个时候单步调试(Command+F8)应该会调到调用<code>jedis.shutdown()</code>方法的地方，结果程序直接执行到了断点B。</p>
+<p>没有调到执行<code>jedis.shutdown()</code>的地方。</p>
+<p>突然灵光一闪：<strong>会不会是因为<code>testExecuteLuaScript()</code>程序执行结束，然后<code>springboot</code>框架释放<code>Jedis</code>资源的时候调用了<code>shutdown()</code>方法？</strong></p>
+<p>转念一想，应该不至于这么傻逼吧，程序结束顶多释放资源关闭连接而已，怎么可能会把服务器给关闭掉啊？</p>
+<p>不管是不是，反正现在也没其他思路了，就先试试这种可能性吧，万一真的这么傻逼呢？</p>
+<p>这个其实很好验证：当程序进入断点A之后，停留几分钟，看下这几分钟之内Redis服务器会不会被<code>shutdown</code>(接收到<code>shutdown</code>命令)。如果不会，取消断点，继续执行，看程序会不会进入断点B(执行<code>jedis.shutdown()</code>方法)。</p>
+<p>作为行动派，立马做起来。</p>
+<p>20:20分程序进入断点A，并在A出停留3分钟，此时Redis服务器一直正常运行，没有收到<code>SHUTDOWN</code>命令。继续执行，果然，程序进入断点B，继续执行，Redis服务器输入<code># User requested shutdown...</code>并关闭。</p>
+<p><img src="https://i.loli.net/2019/03/09/5c83b0bd9d50c.png" alt="redis3.png"></p>
+<p>天哪（小岳岳表情）！难道真的这么傻逼！程序运行结束就把服务器给关闭了！！？？</p>
+<p>为了验证我这个想法，我决定：不在ut里面执行，在controller里面写一个接口，接口里面执行一样的代码。看代码执行之后会不会发出<code>shutdown</code>命令Redis关闭服务器。停止项目，看会不会发出<code>shutdown</code>命令Redis关闭服务器。</p>
+<p><img src="https://i.loli.net/2019/03/09/5c83b237e439a.png" alt="controller.png"></p>
+<p>实验结果发现：每次调用<code>api/jedis/test</code>接口之后Redis服务器正常运行，但是</p>
+<p><strong>关闭项目(IDEA里面的停止按钮，kill pid)之后，程序都会进入到<code>jedis.shutdown()</code>方法中执行，发送<code>SHUTDOWN</code>命令给Redis服务器关闭Redis服务器</strong>。</p>
+<p>进行到这里，基本上已经有结论了：</p>
+<p><strong>每次程序结束的时候，spring会释放Jedis资源，继而会执行<code>jedis.shutdown()</code>方法。<code>shutdown()</code>方法会给Redis服务器发送<code>SHUTDOWN</code>命令，从而出现服务器输出<code># User requested shutdown...</code>并保存关闭数据库了。（根据这个分析，可以推断出跟执行lua脚本没关系，后来验证了下，的确没啥关系，只要注入了Jedis对象，都会出现一样的情况。说明小D给的信息有误啊。😢）</strong></p>
+<p>那么问题又来了，根据上面的分析，只要使用Jedis的包并注入了Jedis对象，在程序结束的时候都会关闭服务器，这样太不合理了吧？简直丧心病狂啊！！Jedis不至于傻逼的这个程度吧？如果真这样的话，还会有人用Jedis吗？</p>
+<p>我觉得Jedis不至于这么傻逼的，所以肯定还是有哪里有问题的。</p>
+<p>继续排查！</p>
+<p>我们都知道，Spring管理的bean都是有生命周期的，其中一个就是销毁阶段：在程序结束之后会销毁对象，释放资源，在销毁前会执行指定的方法。</p>
+<p>在Spring里面指定销毁前的方法有以下几种方式：</p>
+<ol>
+<li>指定<code>destroy-method</code>方法。</li>
+<li>实现<code>DisposableBean</code>接口。</li>
+<li>在类的方法上加上<code>@PreDestroy</code>注解。</li>
+</ol>
+<p>除了Spring的方式外，Java7引入了<code>AutoCloseable</code>接口，所有实现了<code>AutoCloseable</code>接口的对象会自动调用<code>close()</code>方法。</p>
+<p>从表象上来看，出现上面描述的情况，应该是Jedis把<code>shutdown()</code>方法指定为销毁的时候的<code>destoryMethod</code>了。</p>
+<p>来看下Jedis的继承类图:</p>
+<p><img src="https://i.loli.net/2019/03/09/5c83b7f5d656b.png" alt="jedis.png"></p>
+<p>Jedis并没有实现<code>DisposableBean</code>接口，<code>shutdown()</code>方法也没有打上<code>@PreDestroy</code>注解</p>
+<p><img src="https://i.loli.net/2019/03/09/5c83b88ed7f4d.png" alt="shutdown1.png"></p>
+<p>更没有指定<code>destroy-method</code>方法。同样的，Jedis也没有实现<code>AutoCloseable</code>接口。</p>
+<p>那么为什么在程序执行结束释放资源的时候会调用<code>jedis.shutdown()</code>方法呢？</p>
+<p>既然这个问题想不通，何不从入口出发：Jedis对象是由Spring进行管理并注入的，我们可以从Spring源码入口，看一哈生成Jedis对象的过程中到底发生了哪些事。</p>
+<p>作为第一次看<code>Spring IoC</code>源码的人表示：<code>Spring</code>的源码真的超复杂，看起来太绕了!😢</p>
+<p>从Main函数一步一步断点单步调试，跟踪到<code>AbstractApplicationContext.refresh()</code>方法中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">refresh</span><span class="params">()</span> <span class="keyword">throws</span> BeansException, IllegalStateException </span>&#123;</span><br><span class="line">	<span class="keyword">synchronized</span> (<span class="keyword">this</span>.startupShutdownMonitor) &#123;</span><br><span class="line">		<span class="comment">// Prepare this context for refreshing.</span></span><br><span class="line">		prepareRefresh();</span><br><span class="line"></span><br><span class="line">		<span class="comment">// Tell the subclass to refresh the internal bean factory.</span></span><br><span class="line">		ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();</span><br><span class="line"></span><br><span class="line">		<span class="comment">// Prepare the bean factory for use in this context.</span></span><br><span class="line">		prepareBeanFactory(beanFactory);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line">			<span class="comment">// 其他省略代码</span></span><br><span class="line"></span><br><span class="line">			<span class="comment">// Instantiate all remaining (non-lazy-init) singletons.</span></span><br><span class="line">			<span class="comment">// 初始化所有的非延迟加载的单例bean</span></span><br><span class="line">			finishBeanFactoryInitialization(beanFactory);</span><br><span class="line"></span><br><span class="line">			<span class="comment">// Last step: publish corresponding event.</span></span><br><span class="line">			finishRefresh();</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">catch</span> (BeansException ex) &#123;</span><br><span class="line">			<span class="comment">// 其他省略代码</span></span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">finally</span> &#123;</span><br><span class="line">			<span class="comment">// Reset common introspection caches in Spring's core, since we</span></span><br><span class="line">			<span class="comment">// might not ever need metadata for singleton beans anymore...</span></span><br><span class="line">			resetCommonCaches();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>refresh()</code>方法里面会调用<code>finishBeanFactoryInitialization(beanFactory);</code>生成所有的非延迟加载的单例的对象，跟踪进去看：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">finishBeanFactoryInitialization</span><span class="params">(ConfigurableListableBeanFactory beanFactory)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 其他省略代码</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Instantiate all remaining (non-lazy-init) singletons.</span></span><br><span class="line">	<span class="comment">// 初始化所有剩余的非延迟加载的单例bean</span></span><br><span class="line">	beanFactory.preInstantiateSingletons();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>finishBeanFactoryInitialization()</code>方法中会调用传入的<code>beanfactory.preInstantiateSingletons()</code>完成初始化单例对象的工作。</p>
+<p>继续往下跟踪到<code>DefaultListableBeanFactory.preInstantiateSingletons()</code>方法中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">preInstantiateSingletons</span><span class="params">()</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.logger.isDebugEnabled()) &#123;</span><br><span class="line">		<span class="keyword">this</span>.logger.debug(<span class="string">"Pre-instantiating singletons in "</span> + <span class="keyword">this</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Iterate over a copy to allow for init methods which in turn register new bean definitions.</span></span><br><span class="line">	<span class="comment">// While this may not be part of the regular factory bootstrap, it does otherwise work fine.</span></span><br><span class="line">	List&lt;String&gt; beanNames = <span class="keyword">new</span> ArrayList&lt;String&gt;(<span class="keyword">this</span>.beanDefinitionNames);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Trigger initialization of all non-lazy singleton beans...</span></span><br><span class="line">	<span class="keyword">for</span> (String beanName : beanNames) &#123;</span><br><span class="line">		RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);</span><br><span class="line">		<span class="keyword">if</span> (!bd.isAbstract() &amp;&amp; bd.isSingleton() &amp;&amp; !bd.isLazyInit()) &#123;</span><br><span class="line">			<span class="comment">// 其他省略代码</span></span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">else</span> &#123;</span><br><span class="line">				getBean(beanName);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Trigger post-initialization callback for all applicable beans...</span></span><br><span class="line">	<span class="comment">// 其他省略代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个方法中会调用<code>getBean()</code>方法生成具体的对象，继续往下看:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">getBean</span><span class="params">(String name)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> doGetBean(name, <span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际上调用的是<code>doGetBean()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> &lt;T&gt; <span class="function">T <span class="title">doGetBean</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">		<span class="keyword">final</span> String name, <span class="keyword">final</span> Class&lt;T&gt; requiredType, <span class="keyword">final</span> Object[] args, <span class="keyword">boolean</span> typeCheckOnly)</span></span></span><br><span class="line"><span class="function">		<span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">		<span class="comment">// 其他省略代码</span></span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="comment">// 生成rootBeandefinition</span></span><br><span class="line">			<span class="keyword">final</span> RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);</span><br><span class="line">			<span class="comment">// Create bean instance.</span></span><br><span class="line">			<span class="comment">// 如果是单例，则生成对象</span></span><br><span class="line">			<span class="keyword">if</span> (mbd.isSingleton()) &#123;</span><br><span class="line">				sharedInstance = getSingleton(beanName, <span class="keyword">new</span> ObjectFactory&lt;Object&gt;() &#123;</span><br><span class="line">					<span class="meta">@Override</span></span><br><span class="line">					<span class="function"><span class="keyword">public</span> Object <span class="title">getObject</span><span class="params">()</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">						<span class="keyword">try</span> &#123;</span><br><span class="line">							<span class="comment">// 生成实际的bean</span></span><br><span class="line">							<span class="keyword">return</span> createBean(beanName, mbd, args);</span><br><span class="line">						&#125;</span><br><span class="line">						<span class="keyword">catch</span> (BeansException ex) &#123;</span><br><span class="line">							<span class="comment">// 其他省略代码</span></span><br><span class="line">						&#125;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;);</span><br><span class="line">				<span class="comment">// 其他省略代码</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 其他省略代码</span></span><br><span class="line">	<span class="keyword">return</span> (T) bean;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>doGetBean()</code>方法是调用<code>createBean()</code>方法来生成Bean，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">createBean</span><span class="params">(String beanName, RootBeanDefinition mbd, Object[] args)</span> <span class="keyword">throws</span> BeanCreationException </span>&#123;</span><br><span class="line">	<span class="comment">// 其他省略代码</span></span><br><span class="line">	<span class="comment">// 实例化beanInstance</span></span><br><span class="line">	Object beanInstance = doCreateBean(beanName, mbdToUse, args);</span><br><span class="line">	<span class="keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">		logger.debug(<span class="string">"Finished creating instance of bean '"</span> + beanName + <span class="string">"'"</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> beanInstance;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同样的，<code>createBean()</code>是委托<code>doCreateBean()</code>方法实例化对象，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">doCreateBean</span><span class="params">(<span class="keyword">final</span> String beanName, <span class="keyword">final</span> RootBeanDefinition mbd, <span class="keyword">final</span> Object[] args)</span></span></span><br><span class="line"><span class="function">		<span class="keyword">throws</span> BeanCreationException </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Instantiate the bean.</span></span><br><span class="line">	<span class="comment">// 实例化bean</span></span><br><span class="line">	BeanWrapper instanceWrapper = <span class="keyword">null</span>;</span><br><span class="line">	<span class="keyword">if</span> (mbd.isSingleton()) &#123;</span><br><span class="line">		instanceWrapper = <span class="keyword">this</span>.factoryBeanInstanceCache.remove(beanName);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (instanceWrapper == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="comment">// 实例化对象</span></span><br><span class="line">		instanceWrapper = createBeanInstance(beanName, mbd, args);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ... 其他省略代码</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Initialize the bean instance.</span></span><br><span class="line">	<span class="comment">// 初始化bean</span></span><br><span class="line">	Object exposedObject = bean;</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		populateBean(beanName, mbd, instanceWrapper);</span><br><span class="line">		<span class="keyword">if</span> (exposedObject != <span class="keyword">null</span>) &#123;</span><br><span class="line">			exposedObject = initializeBean(beanName, exposedObject, mbd);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">		<span class="comment">// ... 其他省略代码</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ... 其他省略代码</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// Register bean as disposable.</span></span><br><span class="line">	<span class="comment">// 如果有必要的话，把bean注册为disposable</span></span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		registerDisposableBeanIfNecessary(beanName, bean, mbd);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (BeanDefinitionValidationException ex) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> BeanCreationException(</span><br><span class="line">				mbd.getResourceDescription(), beanName, <span class="string">"Invalid destruction signature"</span>, ex);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> exposedObject;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>doCreateBean()</code>方法中，首先会调用<code>createBeanInstance()</code>方法生成对象，接着会调用<code>populateBean()</code>方法初始化对象。</p>
+<p>同志们，注意了，关键时候到了!!!</p>
+<p>在初始化之后，<strong><code>doCreateBean()</code>方法会调用<code>registerDisposableBeanIfNecessary()</code>方法判断是否有必要把新生成的<code>Bean</code>对象注册为<code>DisposableBean</code></strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">registerDisposableBeanIfNecessary</span><span class="params">(String beanName, Object bean, RootBeanDefinition mbd)</span> </span>&#123;</span><br><span class="line">	AccessControlContext acc = (System.getSecurityManager() != <span class="keyword">null</span> ? getAccessControlContext() : <span class="keyword">null</span>);</span><br><span class="line">	<span class="keyword">if</span> (!mbd.isPrototype() &amp;&amp; requiresDestruction(bean, mbd)) &#123;</span><br><span class="line">		<span class="keyword">if</span> (mbd.isSingleton()) &#123;</span><br><span class="line">			<span class="comment">// Register a DisposableBean implementation that performs all destruction</span></span><br><span class="line">			<span class="comment">// work for the given bean: DestructionAwareBeanPostProcessors,</span></span><br><span class="line">			<span class="comment">// DisposableBean interface, custom destroy method.</span></span><br><span class="line">			<span class="comment">// 注册成为DisposableBean</span></span><br><span class="line">			registerDisposableBean(beanName,</span><br><span class="line">					<span class="keyword">new</span> DisposableBeanAdapter(bean, beanName, mbd, getBeanPostProcessors(), acc));</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="comment">// ... 其他省略代码</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>registerDisposableBeanIfNecessary()</code>方法中，会先调用<code>requiresDestruction(bean, mbd)</code>方法判断是否需要把<code>Bean</code>对象注册成为<code>DisposableBean</code>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">requiresDestruction</span><span class="params">(Object bean, RootBeanDefinition mbd)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> (bean != <span class="keyword">null</span> &amp;&amp;</span><br><span class="line">			(DisposableBeanAdapter.hasDestroyMethod(bean, mbd) || (hasDestructionAwareBeanPostProcessors() &amp;&amp;</span><br><span class="line">					DisposableBeanAdapter.hasApplicableProcessors(bean, getBeanPostProcessors()))));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先调用<code>DisposableBeanAdapter.hasDestroyMethod(bean, mbd)</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">hasDestroyMethod</span><span class="params">(Object bean, RootBeanDefinition beanDefinition)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 如果bean实现了DisposableBean接口或者实现了java.lang.AutoCloseable接口，则直接返回true，表示要注册成为DisposableBean</span></span><br><span class="line">	<span class="keyword">if</span> (bean <span class="keyword">instanceof</span> DisposableBean || closeableInterface.isInstance(bean)) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 获取bean指定的destoryMethodName</span></span><br><span class="line">	String destroyMethodName = beanDefinition.getDestroyMethodName();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (AbstractBeanDefinition.INFER_METHOD.equals(destroyMethodName)) &#123;</span><br><span class="line">		<span class="comment">// 如果指定的方法名是字符串 (inferred)，则</span></span><br><span class="line">		<span class="comment">// 首先判断Bean对象中方法中有没有名为close()的方法，如果没有的话，在判断有没有</span></span><br><span class="line">		<span class="comment">// 名为shutdown的方法</span></span><br><span class="line">		<span class="keyword">return</span> (ClassUtils.hasMethod(bean.getClass(), CLOSE_METHOD_NAME) ||</span><br><span class="line">				ClassUtils.hasMethod(bean.getClass(), SHUTDOWN_METHOD_NAME));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// 如果用户自己指定且不为空，则返回true，注册为DisposableBean,如果指定为空串则不注册</span></span><br><span class="line">	<span class="keyword">return</span> StringUtils.hasLength(destroyMethodName);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>hasDestroyMethod()</code>方法中，会</p>
+<ol>
+<li>判断bean对象有没有实现<code>DisposableBean</code>接口或者<code>java.lang.AutoCloseable</code>接口，如果有的话则返回true表示注册为<code>DisposableBean</code>。</li>
+<li>获取bean指定的<code>destoryMethodName</code>。如果没有指定的话，<code>Spring</code>会默认为<code>(inferred)</code>，表示由<code>Spring</code>自己来推断。</li>
+<li><code>Spring</code>会首先判断<code>Bean</code>对象有没有一个名字叫做<code>close</code>的方法，如果没有的话，则继续判断有没有名为<code>shutdown</code>的方法，有的话则返回<code>true</code>注册为<code>DisposableBean</code>。</li>
+<li>如果都没有，则判断指定的<code>destoryMethodName</code>是否为空串，如果不是则返回true注册成为<code>DisposableBean</code>，否则不注册。</li>
+</ol>
+<p>继续回到<code>registerDisposableBeanIfNecessary()</code>方法中，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">registerDisposableBeanIfNecessary</span><span class="params">(String beanName, Object bean, RootBeanDefinition mbd)</span> </span>&#123;</span><br><span class="line">	AccessControlContext acc = (System.getSecurityManager() != <span class="keyword">null</span> ? getAccessControlContext() : <span class="keyword">null</span>);</span><br><span class="line">	<span class="keyword">if</span> (!mbd.isPrototype() &amp;&amp; requiresDestruction(bean, mbd)) &#123;</span><br><span class="line">		<span class="keyword">if</span> (mbd.isSingleton()) &#123;</span><br><span class="line">			<span class="comment">// Register a DisposableBean implementation that performs all destruction</span></span><br><span class="line">			<span class="comment">// work for the given bean: DestructionAwareBeanPostProcessors,</span></span><br><span class="line">			<span class="comment">// DisposableBean interface, custom destroy method.</span></span><br><span class="line">			<span class="comment">// 注册成为DisposableBean</span></span><br><span class="line">			registerDisposableBean(beanName,</span><br><span class="line">					<span class="keyword">new</span> DisposableBeanAdapter(bean, beanName, mbd, getBeanPostProcessors(), acc));</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="comment">// ... 其他省略代码</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在判断<code>Bean</code>需要注册成为<code>DisposableBean</code>之后，接着会生成一个<code>DisposableBeanAdapter</code>对象，进入到<code>DisposableBeanAdapter</code>的构造函数中看下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">DisposableBeanAdapter</span><span class="params">(Object bean, String beanName, RootBeanDefinition beanDefinition,</span></span></span><br><span class="line"><span class="function"><span class="params">		List&lt;BeanPostProcessor&gt; postProcessors, AccessControlContext acc)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 推断destoryMethodName</span></span><br><span class="line">	String destroyMethodName = inferDestroyMethodIfNecessary(bean, beanDefinition);</span><br><span class="line">	<span class="keyword">if</span> (destroyMethodName != <span class="keyword">null</span> &amp;&amp; !(<span class="keyword">this</span>.invokeDisposableBean &amp;&amp; <span class="string">"destroy"</span>.equals(destroyMethodName)) &amp;&amp;</span><br><span class="line">			!beanDefinition.isExternallyManagedDestroyMethod(destroyMethodName)) &#123;</span><br><span class="line">		<span class="comment">// 设置方法名</span></span><br><span class="line">		<span class="keyword">this</span>.destroyMethodName = destroyMethodName;</span><br><span class="line">		<span class="comment">// 生成对应的方法</span></span><br><span class="line">		<span class="keyword">this</span>.destroyMethod = determineDestroyMethod();</span><br><span class="line"></span><br><span class="line">		<span class="comment">// ... 其他省略代码</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">this</span>.beanPostProcessors = filterPostProcessors(postProcessors, bean);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在构造函数中，首先会调用<code>inferDestroyMethodIfNecessary()</code>方法判断<code>destoryMethodName</code>是什么：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> String <span class="title">inferDestroyMethodIfNecessary</span><span class="params">(Object bean, RootBeanDefinition beanDefinition)</span> </span>&#123;</span><br><span class="line">	String destroyMethodName = beanDefinition.getDestroyMethodName();</span><br><span class="line">	<span class="keyword">if</span> (AbstractBeanDefinition.INFER_METHOD.equals(destroyMethodName) ||</span><br><span class="line">			(destroyMethodName == <span class="keyword">null</span> &amp;&amp; closeableInterface.isInstance(bean))) &#123;</span><br><span class="line">		<span class="comment">// Only perform destroy method inference or Closeable detection</span></span><br><span class="line">		<span class="comment">// in case of the bean not explicitly implementing DisposableBean</span></span><br><span class="line">		<span class="keyword">if</span> (!(bean <span class="keyword">instanceof</span> DisposableBean)) &#123;</span><br><span class="line">			<span class="keyword">try</span> &#123;</span><br><span class="line">				<span class="comment">// 首先找到是否存在close()方法</span></span><br><span class="line">				<span class="keyword">return</span> bean.getClass().getMethod(CLOSE_METHOD_NAME).getName();</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">catch</span> (NoSuchMethodException ex) &#123;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					<span class="comment">// 如果不存在close()，则判断存不存在shutdown方法</span></span><br><span class="line">					<span class="keyword">return</span> bean.getClass().getMethod(SHUTDOWN_METHOD_NAME).getName();</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">catch</span> (NoSuchMethodException ex2) &#123;</span><br><span class="line">					<span class="comment">// no candidate destroy method found</span></span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// destroyMethodName是否为空窜，不是则返回自定义的方法名，否则返回null</span></span><br><span class="line">	<span class="keyword">return</span> (StringUtils.hasLength(destroyMethodName) ? destroyMethodName : <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>inferDestroyMethodIfNecessary()</code>的逻辑跟<code>hasDestroyMethod()</code>方法一样：如果<code>destoryMethodName</code>为<code>(inferred)</code>，则表示要<code>Spring</code>自动推断，推断的逻辑是：如果<code>Bean</code>存在<code>close()</code>方法，则把<code>close</code>设置为<code>destoryMethodName</code>，如果不存在则把<code>shutdown</code>设置为<code>destoryMethodName</code>，如果都不存在则为<code>null</code>。如果用户指定了特定的方法，且不为空，则返回用户指定的方法，否则返回<code>null</code>。</p>
+<p>接着会调用<code>determineDestroyMethod()</code>方法生成具体的<code>destoryMethod</code>。</p>
+<p>我想分析道这里，已经不用往下看了！！！问题的原因终于找到了！！！！</p>
+<h2 id="结论及反思"><a href="#结论及反思" class="headerlink" title="结论及反思"></a>结论及反思</h2><h3 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h3><p>在走了很多弯路，深入分析了<code>Spring</code>源码之后，终于查明了原因：</p>
+<p><strong>Jedis对象正好有一个名字叫做<code>shutdown</code>的方法，虽然Jedis对象没有指定<code>destoryMethod</code>，但是被Spring 自动推断注册成为了<code>DisposableBean</code>！！！并且把<code>shutdown()</code>方法注册为<code>destoryMethod</code>，在程序运行结束的时候会调用<code>shutdown()</code>，发送<code>SHUTDOWN</code>关闭了Redis服务器！！！</strong></p>
+<h3 id="修复"><a href="#修复" class="headerlink" title="修复"></a>修复</h3><p>从上面的分析中，已经可以得到修复这个问题的方法了。</p>
+<ol>
+<li><p>在配置生成<code>Jedis</code>对象的时候注定<code>destoryMethod</code>方法为空串。</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span>(value = <span class="string">"jedis"</span>,destroyMethod = <span class="string">""</span>)</span><br><span class="line">   <span class="function"><span class="keyword">public</span> Jedis <span class="title">buildJedis</span><span class="params">()</span> </span>&#123;</span><br><span class="line">       JedisPoolConfig config = <span class="keyword">new</span> JedisPoolConfig();</span><br><span class="line">       JedisPool jedisPool = <span class="keyword">new</span> JedisPool(config, <span class="string">"127.0.0.1"</span>, <span class="number">6379</span>);</span><br><span class="line"></span><br><span class="line">       <span class="keyword">return</span> jedisPool.getResource();</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>在<code>Jedis Client</code>中实现<code>close()</code>方法，<code>close()</code>的实现可以为关闭连接。按照优先级，<code>shutdown()</code>方法就不会注册成为<code>destoryMethod</code>。</p>
+<p> 出现问题的Jedis版本为2.2.1，这个版本太老了，还是13年发布的，这个问题在2.4.x版本就已经修复了(采用的就是第二种方法，实现了<code>close()</code>方法，<code>close()</code>方法的实现就是关闭连接)，</p>
+</li>
+</ol>
+<p>忍不住吐槽下，为啥公司还用这么老版本的客户端！！</p>
+<h3 id="反思"><a href="#反思" class="headerlink" title="反思"></a>反思</h3><p>在这个问题的排查过程中，其实是走了不少弯路的。</p>
+<ol>
+<li><p>最开始输入的信息不够准确，导致排查方向有误。</p>
+<p> 最开始反馈的信息是：</p>
+<ol>
+<li>服务端使用的Redis版本是2.8.11会出现问题，使用本地的5.x没问题。</li>
+<li><p>只会在执行lua脚本的时候出现问题，执行其他的命令没问题。</p>
+<p>其实这些信息都是有误的，导致第一次排查的时候主要在服务端排查。</p>
+<p>后面跟小D聊的时候，才知道小D本地装5.x的时候，限制了shutdown命令，所以表现出来就是5.x的版本没有问题。</p>
+</li>
+</ol>
+</li>
+<li><p>思维定势，先入为主。</p>
+<p> 在确认客户端有没有发送<code>shutdown</code>命令给服务器的时候，一开始想当然的认为客户端不可能主动发送<code>shutdown</code>给服务器。导致后面花了很多时间在排查服务端的问题。</p>
+<p> 后面证明：第一次的排查时间完全是浪费了的。</p>
+</li>
+<li><p>对Redis的命令以及实现不够熟悉，导致没有很快确定Redis没有问题。</p>
+<p> 第一次排查的时候真不知道Redis还有<code>shutdown</code>命令(第二次排查的时候猜测应该有可能会有<code>shutdownCommand()</code>方法，一搜，还真有)。如果知道有这么个命令的话，就不至于傻逼的通过查找<code>prepareForShutdown()</code>方法来定位问题，肯定会直接在<code>shutdownCommand()</code>方法处加断点。这样很快就能定位问题出在哪里了！</p>
+<p> 对<code>monitor</code>命令的原理认知不够，导致判断错误。</p>
+<p> 第一次通过<code>monitor</code>命令查看Redis服务器收到哪些命令的时候，并没有看到<code>shutdown</code>命令，导致自己更加坚定的认为客户端没问题。</p>
+</li>
+</ol>
+<ol start="4">
+<li>对Spring不够熟悉。如果对Spring足够熟悉的话，就很容易知道是因为Jedis客户端存在<code>shutdown()</code>方法，导致被注册为<code>destoryMethod()</code>，从而在程序结束的时候被执行。</li>
+</ol>
+<h2 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h2><h3 id="关于monitor和shutdown命令（-如果看到这里，最好往下看完-）"><a href="#关于monitor和shutdown命令（-如果看到这里，最好往下看完-）" class="headerlink" title="关于monitor和shutdown命令（ 如果看到这里，最好往下看完 ）"></a>关于<code>monitor</code>和<code>shutdown</code>命令（ 如果看到这里，最好往下看完 ）</h3><p>在第一次排查的时候使用<code>monitor</code>命令，发现Redis服务器收到了客户端发送的<code>SHUTDOWN</code>命令，但是<code>monitor</code>命令的结果并没有输出，导致误判。</p>
+<p>为什么会这样呢？</p>
+<p>要搞清楚这个问题，需要明白两点。</p>
+<ol>
+<li>monitor和shutdown的实现原理。</li>
+<li>Redis事件驱动模型。</li>
+<li>Redis如何给客户端返回数据。</li>
+</ol>
+<p>现在来一个一个分析。</p>
+<h4 id="首先是monitor的实现原理"><a href="#首先是monitor的实现原理" class="headerlink" title="首先是monitor的实现原理"></a>首先是monitor的实现原理</h4><p><code>monitor</code>命令执行过程为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">void monitorCommand(client *c) &#123;</span><br><span class="line">    /* ignore MONITOR if already slave or in monitor mode */</span><br><span class="line">    if (c-&gt;flags &amp; CLIENT_SLAVE) return;</span><br><span class="line"></span><br><span class="line">    c-&gt;flags |= (CLIENT_SLAVE|CLIENT_MONITOR);</span><br><span class="line">    listAddNodeTail(server.monitors,c);</span><br><span class="line">    addReply(c,shared.ok);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>把自己添加到<code>server.monitors</code>链表的末尾。</p>
+<p>当其他客户端在执行命令的时候，在<code>call()</code>方法中会把自己要执行的命令拷贝到<code>server.monitors</code>链表中的每个client的缓冲区中，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">void call(client *c, int flags) &#123;</span><br><span class="line">    long long dirty, start, duration;</span><br><span class="line">    int client_old_flags = c-&gt;flags;</span><br><span class="line">    struct redisCommand *real_cmd = c-&gt;cmd;</span><br><span class="line"></span><br><span class="line">    /* Sent the command to clients in MONITOR mode, only if the commands are</span><br><span class="line">     * not generated from reading an AOF. */</span><br><span class="line">    if (listLength(server.monitors) &amp;&amp;</span><br><span class="line">        !server.loading &amp;&amp;</span><br><span class="line">        !(c-&gt;cmd-&gt;flags &amp; (CMD_SKIP_MONITOR|CMD_ADMIN)))</span><br><span class="line">    &#123;		</span><br><span class="line">    	  // 调用replicationFeedMonitors()方法把请求命令复制到monitors链表的每个元素的缓冲区上</span><br><span class="line">        replicationFeedMonitors(c,server.monitors,c-&gt;db-&gt;id,c-&gt;argv,c-&gt;argc);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // ... 其他省略代码</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>replicationFeedMonitors()</code>方法中把数据复制到<code>server.monitors</code>链表上的每个元素的缓冲区上</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">void replicationFeedMonitors(client *c, list *monitors, int dictid, robj **argv, int argc) &#123;</span><br><span class="line">    listNode *ln;</span><br><span class="line">    listIter li;</span><br><span class="line">    int j;</span><br><span class="line">    sds cmdrepr = sdsnew(&quot;+&quot;);</span><br><span class="line">    robj *cmdobj;</span><br><span class="line">    struct timeval tv;</span><br><span class="line"></span><br><span class="line">    gettimeofday(&amp;tv,NULL);</span><br><span class="line">    cmdrepr = sdscatprintf(cmdrepr,&quot;%ld.%06ld &quot;,(long)tv.tv_sec,(long)tv.tv_usec);</span><br><span class="line">    if (c-&gt;flags &amp; CLIENT_LUA) &#123;</span><br><span class="line">        cmdrepr = sdscatprintf(cmdrepr,&quot;[%d lua] &quot;,dictid);</span><br><span class="line">    &#125; else if (c-&gt;flags &amp; CLIENT_UNIX_SOCKET) &#123;</span><br><span class="line">        cmdrepr = sdscatprintf(cmdrepr,&quot;[%d unix:%s] &quot;,dictid,server.unixsocket);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        cmdrepr = sdscatprintf(cmdrepr,&quot;[%d %s] &quot;,dictid,getClientPeerId(c));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    for (j = 0; j &lt; argc; j++) &#123;</span><br><span class="line">        if (argv[j]-&gt;encoding == OBJ_ENCODING_INT) &#123;</span><br><span class="line">            cmdrepr = sdscatprintf(cmdrepr, &quot;\&quot;%ld\&quot;&quot;, (long)argv[j]-&gt;ptr);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            cmdrepr = sdscatrepr(cmdrepr,(char*)argv[j]-&gt;ptr,</span><br><span class="line">                        sdslen(argv[j]-&gt;ptr));</span><br><span class="line">        &#125;</span><br><span class="line">        if (j != argc-1)</span><br><span class="line">            cmdrepr = sdscatlen(cmdrepr,&quot; &quot;,1);</span><br><span class="line">    &#125;</span><br><span class="line">    // 生成字符互传对象</span><br><span class="line">    cmdrepr = sdscatlen(cmdrepr,&quot;\r\n&quot;,2);</span><br><span class="line">    cmdobj = createObject(OBJ_STRING,cmdrepr);</span><br><span class="line"></span><br><span class="line">    listRewind(monitors,&amp;li);</span><br><span class="line">    while((ln = listNext(&amp;li))) &#123;</span><br><span class="line">    	 // 遍历链表上的每个元素，调用addReply()方法把数据写入buf缓冲区</span><br><span class="line">        client *monitor = ln-&gt;value;</span><br><span class="line">        addReply(monitor,cmdobj);</span><br><span class="line">    &#125;</span><br><span class="line">    decrRefCount(cmdobj);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Redis的事件驱动模型"><a href="#Redis的事件驱动模型" class="headerlink" title="Redis的事件驱动模型"></a>Redis的事件驱动模型</h4><p>Redis的事件驱动模型(可以参考我之前写的一篇文章<a href="http://beautyboss.farbox.com/post/redis/redisyuan-ma-xue-xi-zhi-shi-jian-qu-dong" target="_blank" rel="noopener">Redis源码学习之事件驱动</a>）为</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">void aeMain(aeEventLoop *eventLoop) &#123;</span><br><span class="line">    eventLoop-&gt;stop = 0;</span><br><span class="line">    while (!eventLoop-&gt;stop) &#123;</span><br><span class="line">        if (eventLoop-&gt;beforesleep != NULL)</span><br><span class="line">            eventLoop-&gt;beforesleep(eventLoop);</span><br><span class="line">        aeProcessEvents(eventLoop, AE_ALL_EVENTS);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在每次进入事件循前会先调用<code>eventLoop-&gt;beforesleep()</code>方法。在<code>beforesleep()</code>方法中把数据返回给<code>Client</code>。</p>
+<h4 id="Redis如何把数据返回给客户端"><a href="#Redis如何把数据返回给客户端" class="headerlink" title="Redis如何把数据返回给客户端"></a>Redis如何把数据返回给客户端</h4><p>在Redis每次接收到命令并执行之后，Redis不是立马把返回结果写回给Client，而是通过调用<code>addReply()</code>方法首先把需要返回数据的Client对象添加到<code>server.clients_pending_write</code>对象的末尾，然后把需要返回的数据保存到Client对象的缓冲区<code>c-&gt;buf</code>中，代码如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">void addReply(client *c, robj *obj) &#123;</span><br><span class="line">	 // 把client对象添加到server.clients_pending_write链表的末尾</span><br><span class="line">    if (prepareClientToWrite(c) != C_OK) return;</span><br><span class="line"></span><br><span class="line">    if (sdsEncodedObject(obj)) &#123;</span><br><span class="line">    	  // 把数据添加到buf缓冲区</span><br><span class="line">        if (_addReplyToBuffer(c,obj-&gt;ptr,sdslen(obj-&gt;ptr)) != C_OK)</span><br><span class="line">            _addReplyStringToList(c,obj-&gt;ptr,sdslen(obj-&gt;ptr));</span><br><span class="line">    &#125; else if (obj-&gt;encoding == OBJ_ENCODING_INT) &#123;</span><br><span class="line">        /* For integer encoded strings we just convert it into a string</span><br><span class="line">         * using our optimized function, and attach the resulting string</span><br><span class="line">         * to the output buffer. */</span><br><span class="line">        char buf[32];</span><br><span class="line">        size_t len = ll2string(buf,sizeof(buf),(long)obj-&gt;ptr);</span><br><span class="line">        if (_addReplyToBuffer(c,buf,len) != C_OK)</span><br><span class="line">            _addReplyStringToList(c,buf,len);</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        serverPanic(&quot;Wrong obj-&gt;encoding in addReply()&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>addReply()</code>方法首先调用<code>prepareClientToWrite()</code>方法把Client对象保存到<code>server.clients_pending_write</code>链表的末尾:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">int prepareClientToWrite(client *c) &#123;</span><br><span class="line"></span><br><span class="line">    // ... 其他省略的一些判断代码</span><br><span class="line">    if (!clientHasPendingReplies(c))</span><br><span class="line">    	// 这里保存</span><br><span class="line">    	clientInstallWriteHandler(c);</span><br><span class="line"></span><br><span class="line">    /* Authorize the caller to queue in the output buffer of this client. */</span><br><span class="line">    return C_OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用<code>clientInstallWriteHandler()</code>保存到链表的末尾</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">void clientInstallWriteHandler(client *c) &#123;</span><br><span class="line">        if (!(c-&gt;flags &amp; CLIENT_PENDING_WRITE) &amp;&amp;</span><br><span class="line">        (c-&gt;replstate == REPL_STATE_NONE ||</span><br><span class="line">         (c-&gt;replstate == SLAVE_STATE_ONLINE &amp;&amp; !c-&gt;repl_put_online_on_ack)))</span><br><span class="line">    &#123;</span><br><span class="line">    	  // 设置标志位并添加数据到链表的末尾</span><br><span class="line">        c-&gt;flags |= CLIENT_PENDING_WRITE;</span><br><span class="line">        listAddNodeHead(server.clients_pending_write,c);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>紧接着会调用<code>_addReplyToBuffer()</code>方法把数据写入到<code>buf</code>缓冲区</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">int _addReplyToBuffer(client *c, const char *s, size_t len) &#123;</span><br><span class="line"></span><br><span class="line">    // ... 其他一些省略代码</span><br><span class="line"></span><br><span class="line">    // 把数据拷贝到buf缓冲区</span><br><span class="line">    memcpy(c-&gt;buf+c-&gt;bufpos,s,len);</span><br><span class="line">    c-&gt;bufpos+=len;</span><br><span class="line">    return C_OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面说了，Redis的事件驱动模型会在每次进入事件循环处理请求前会先调用<code>beforeSleep()</code>方法，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">void beforeSleep(struct aeEventLoop *eventLoop) &#123;</span><br><span class="line"></span><br><span class="line">    // ... 其他省略代码</span><br><span class="line"></span><br><span class="line">    /* Write the AOF buffer on disk */</span><br><span class="line">    flushAppendOnlyFile(0);</span><br><span class="line"></span><br><span class="line">    /* Handle writes with pending output buffers. */</span><br><span class="line">    // 给client返回数据</span><br><span class="line">    handleClientsWithPendingWrites();</span><br><span class="line"></span><br><span class="line">    // ... 其他省略代码</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>beforeSleep()</code>中会调用<code>handleClientsWithPendingWrites();</code>方法把数据发送给<code>Client</code>:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">int handleClientsWithPendingWrites(void) &#123;</span><br><span class="line">    listIter li;</span><br><span class="line">    listNode *ln;</span><br><span class="line">    int processed = listLength(server.clients_pending_write);</span><br><span class="line"></span><br><span class="line">    listRewind(server.clients_pending_write,&amp;li);</span><br><span class="line">    while((ln = listNext(&amp;li))) &#123;</span><br><span class="line">    	 // 遍历server.clients_pending_write链表，对链表中的每个client执行写数据操作</span><br><span class="line">        client *c = listNodeValue(ln);</span><br><span class="line"></span><br><span class="line">        // ... 其他省略代码</span><br><span class="line"></span><br><span class="line">        // 把缓冲区中的数据返回给socket</span><br><span class="line">        if (writeToClient(c-&gt;fd,c,0) == C_ERR) continue;</span><br><span class="line"></span><br><span class="line">        // ... 其他省略代码</span><br><span class="line">    &#125;</span><br><span class="line">    return processed;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>综上，Redis <code>monitor</code>命令的实现原理为:</p>
+<p><strong>其他客户端执行的命令都会复制到执行了<code>monitor</code>命令的客户端的缓冲区<code>buf</code>中，然后Redis在每次进入下一个循环前会把每个客户端缓冲区的数据返回给对应的客户端。</strong></p>
+<p><strong>可以看出，monitor的实现依赖于事件循环！</strong></p>
+<h4 id="shutdown命令-如果看到这里，最好一定要往下看完"><a href="#shutdown命令-如果看到这里，最好一定要往下看完" class="headerlink" title="shutdown命令(如果看到这里，最好一定要往下看完)"></a><code>shutdown</code>命令(<strong>如果看到这里，最好一定要往下看完</strong>)</h4><p>再来看<code>shutdown</code>命令，<code>shutdown</code>命令执行过程为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">void shutdownCommand(client *c) &#123;</span><br><span class="line">    // ... 其他一些省略代码，</span><br><span class="line">    if (prepareForShutdown(flags) == C_OK)</span><br><span class="line">     	exit(0);</span><br><span class="line">    addReplyError(c,&quot;Errors trying to SHUTDOWN. Check logs.&quot;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>shutdownCommand()</code>方法中，会调用<code>prepareForShutdown()</code>做关闭前的准备工作，然后<strong>直接调用<code>exit()</code>方法退出程序了，所以执行<code>monitor</code>命令客户端看不到<code>shutdown</code>命令的</strong>。</p>
+<p>关于为啥看不到<code>shutdown</code>命令的分析，简直天衣无缝，行云流水！</p>
+<p>对！没错！肯定是这个原因！！！</p>
+<p>但是！！！！</p>
+<p>事情真的有这么简单吗！！！</p>
+<p>眉头一皱，隐隐觉得哪里不对劲！！！</p>
+<p>回头重新看了下代码，果然，有坑！！！</p>
+<p>重新回到<code>call()</code>方法中，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">void call(client *c, int flags) &#123;</span><br><span class="line">    long long dirty, start, duration;</span><br><span class="line">    int client_old_flags = c-&gt;flags;</span><br><span class="line">    struct redisCommand *real_cmd = c-&gt;cmd;</span><br><span class="line"></span><br><span class="line">    /* Sent the command to clients in MONITOR mode, only if the commands are</span><br><span class="line">     * not generated from reading an AOF. */</span><br><span class="line">    if (listLength(server.monitors) &amp;&amp;</span><br><span class="line">        !server.loading &amp;&amp;</span><br><span class="line">        !(c-&gt;cmd-&gt;flags &amp; (CMD_SKIP_MONITOR|CMD_ADMIN)))</span><br><span class="line">    &#123;       </span><br><span class="line">          // 调用replicationFeedMonitors()方法把请求命令复制到monitors链表的每个元素的缓冲区上</span><br><span class="line">        replicationFeedMonitors(c,server.monitors,c-&gt;db-&gt;id,c-&gt;argv,c-&gt;argc);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // ... 其他省略代码</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>把命令复制到<code>monitor</code>对象的时候会先判断命令的属性，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">!(c-&gt;cmd-&gt;flags &amp; (CMD_SKIP_MONITOR|CMD_ADMIN))</span><br></pre></td></tr></table></figure>
+<p>在Redis里面，每个命令都有自己的属性(多种属性的组合)，所有的属性定义如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">#define CMD_WRITE (1&lt;&lt;0)            /* &quot;w&quot; flag */</span><br><span class="line">#define CMD_READONLY (1&lt;&lt;1)         /* &quot;r&quot; flag */</span><br><span class="line">#define CMD_DENYOOM (1&lt;&lt;2)          /* &quot;m&quot; flag */</span><br><span class="line">#define CMD_MODULE (1&lt;&lt;3)           /* Command exported by module. */</span><br><span class="line">#define CMD_ADMIN (1&lt;&lt;4)            /* &quot;a&quot; flag */</span><br><span class="line">#define CMD_PUBSUB (1&lt;&lt;5)           /* &quot;p&quot; flag */</span><br><span class="line">#define CMD_NOSCRIPT (1&lt;&lt;6)         /* &quot;s&quot; flag */</span><br><span class="line">#define CMD_RANDOM (1&lt;&lt;7)           /* &quot;R&quot; flag */</span><br><span class="line">#define CMD_SORT_FOR_SCRIPT (1&lt;&lt;8)  /* &quot;S&quot; flag */</span><br><span class="line">#define CMD_LOADING (1&lt;&lt;9)          /* &quot;l&quot; flag */</span><br><span class="line">#define CMD_STALE (1&lt;&lt;10)           /* &quot;t&quot; flag */</span><br><span class="line">#define CMD_SKIP_MONITOR (1&lt;&lt;11)    /* &quot;M&quot; flag */</span><br><span class="line">#define CMD_ASKING (1&lt;&lt;12)          /* &quot;k&quot; flag */</span><br><span class="line">#define CMD_FAST (1&lt;&lt;13)            /* &quot;F&quot; flag *</span><br></pre></td></tr></table></figure>
+<p>具体每个属性的作用可以自行去了解，<br>每个方法具体有哪些属性组合，可以在源码中看到，我们看一下<code>SHUTDOWN</code>命令的属性：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;&quot;shutdown&quot;,shutdownCommand,-1,&quot;aslt&quot;,0,NULL,0,0,0,0,0&#125;,</span><br></pre></td></tr></table></figure>
+<p><code>SHUTDOWN</code>命令含有<code>aslt</code>属性，</p>
+<p>而有<code>a</code>属性的命令都不会被复制到<code>monitor</code>对象的缓冲区上。</p>
+<p>所以，<strong>不管<code>shutdown</code>命令会不会直接关闭程序，在<code>monitor</code>客户端上都不会输出</strong>。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Redis/" rel="tag"># Redis</a>
+          
+            <a href="/tags/Jedis/" rel="tag"># Jedis</a>
+          
+            <a href="/tags/SpringBoot/" rel="tag"># SpringBoot</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/11/深入学习Java序列化/" rel="next" title="深入学习Java序列化">
+                <i class="fa fa-chevron-left"></i> 深入学习Java序列化
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/29/Quartz分享/" rel="prev" title="Quartz分享">
+                Quartz分享 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#复现"><span class="nav-number">2.</span> <span class="nav-text">复现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#排查"><span class="nav-number">3.</span> <span class="nav-text">排查</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#第一次排查"><span class="nav-number">3.1.</span> <span class="nav-text">第一次排查</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#第二次排查"><span class="nav-number">3.2.</span> <span class="nav-text">第二次排查</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#结论及反思"><span class="nav-number">4.</span> <span class="nav-text">结论及反思</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#结论"><span class="nav-number">4.1.</span> <span class="nav-text">结论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#修复"><span class="nav-number">4.2.</span> <span class="nav-text">修复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#反思"><span class="nav-number">4.3.</span> <span class="nav-text">反思</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#其他"><span class="nav-number">5.</span> <span class="nav-text">其他</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#关于monitor和shutdown命令（-如果看到这里，最好往下看完-）"><span class="nav-number">5.1.</span> <span class="nav-text">关于monitor和shutdown命令（ 如果看到这里，最好往下看完 ）</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#首先是monitor的实现原理"><span class="nav-number">5.1.1.</span> <span class="nav-text">首先是monitor的实现原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis的事件驱动模型"><span class="nav-number">5.1.2.</span> <span class="nav-text">Redis的事件驱动模型</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis如何把数据返回给客户端"><span class="nav-number">5.1.3.</span> <span class="nav-text">Redis如何把数据返回给客户端</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#shutdown命令-如果看到这里，最好一定要往下看完"><span class="nav-number">5.1.4.</span> <span class="nav-text">shutdown命令(如果看到这里，最好一定要往下看完)</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

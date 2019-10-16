@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Redis,源码,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="WhatRedis5带来的最大的改变应该就是引入了stream这个数据结构了。这就相当于在Redis里面内置了一个Kafka。 Redis5里面的stream底层是基于基数树实现的。要想深入要就stream的实现，就必须先搞懂基数树的实现。 那么什么是基数树呢？ TOTO How因为这篇博客是单独分析Redis里面的基数树的实现，所以把基数树相关的实现单独拎出来。 基数树相关的实现在rax.h、r">
+<meta name="keywords" content="Redis,源码">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis源码学习之基数树的实现">
+<meta property="og:url" content="http://yoursite.com/2019/03/10/Redis源码学习之基数树/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="WhatRedis5带来的最大的改变应该就是引入了stream这个数据结构了。这就相当于在Redis里面内置了一个Kafka。 Redis5里面的stream底层是基于基数树实现的。要想深入要就stream的实现，就必须先搞懂基数树的实现。 那么什么是基数树呢？ TOTO How因为这篇博客是单独分析Redis里面的基数树的实现，所以把基数树相关的实现单独拎出来。 基数树相关的实现在rax.h、r">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://i.loli.net/2018/12/04/5c060f067aec6.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/04/5c060f07cea40.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/04/5c060f062a033.png">
+<meta property="og:updated_time" content="2019-03-10T11:58:38.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis源码学习之基数树的实现">
+<meta name="twitter:description" content="WhatRedis5带来的最大的改变应该就是引入了stream这个数据结构了。这就相当于在Redis里面内置了一个Kafka。 Redis5里面的stream底层是基于基数树实现的。要想深入要就stream的实现，就必须先搞懂基数树的实现。 那么什么是基数树呢？ TOTO How因为这篇博客是单独分析Redis里面的基数树的实现，所以把基数树相关的实现单独拎出来。 基数树相关的实现在rax.h、r">
+<meta name="twitter:image" content="https://i.loli.net/2018/12/04/5c060f067aec6.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/03/10/Redis源码学习之基数树/">
+
+
+
+
+
+  <title>Redis源码学习之基数树的实现 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/10/Redis源码学习之基数树/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Redis源码学习之基数树的实现</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-10T19:58:38+08:00">
+                2019-03-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index">
+                    <span itemprop="name">Redis</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/10/Redis源码学习之基数树/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/03/10/Redis源码学习之基数树/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="What"><a href="#What" class="headerlink" title="What"></a>What</h3><p><code>Redis5</code>带来的最大的改变应该就是引入了<code>stream</code>这个数据结构了。这就相当于在<code>Redis</code>里面内置了一个<code>Kafka</code>。</p>
+<p><code>Redis5</code>里面的<code>stream</code>底层是基于基数树实现的。要想深入要就<code>stream</code>的实现，就必须先搞懂基数树的实现。</p>
+<p>那么什么是基数树呢？</p>
+<p>TOTO</p>
+<h3 id="How"><a href="#How" class="headerlink" title="How"></a>How</h3><p>因为这篇博客是单独分析<code>Redis</code>里面的基数树的实现，所以把基数树相关的实现单独拎出来。</p>
+<p>基数树相关的实现在<code>rax.h</code>、<code>rax.c</code>、<code>rax_malloc.h</code>和<code>zmalloc.c</code>以及<code>zmalloc.h</code>这几个文件中。</p>
+<p>用CLion新建一个C工程，把上面几个文件复制到工程里面去，并需要在在<code>CMakeLists.txt</code>文件中引用这几个文件：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">aux_source_directory(. SOURCE1)</span><br><span class="line"></span><br><span class="line">add_executable(rax $&#123;SOURCE1&#125;)</span><br></pre></td></tr></table></figure>
+<p>然后需要把<code>zmalloc.h</code>文件中的<code>#include &quot;config.h&quot;</code>这行代码注释掉。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &quot;rax.h&quot;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">int main() &#123;</span><br><span class="line"></span><br><span class="line">    rax* tree = raxNew();</span><br><span class="line">    /* 插入元素*/</span><br><span class="line">    raxInsert(tree,&quot;ANNIBALE&quot;,8,&quot;value1&quot;,NULL);</span><br><span class="line">    raxInsert(tree,&quot;SCO&quot;,3,&quot;value2&quot;,NULL);</span><br><span class="line">    raxInsert(tree,&quot;ANNIBALI&quot;,8,&quot;value3&quot;,NULL);</span><br><span class="line">    raxInsert(tree,&quot;AGO&quot;,3,&quot;value4&quot;,NULL);</span><br><span class="line">    raxInsert(tree,&quot;CIAO&quot;,4,&quot;value4&quot;,NULL);</span><br><span class="line">    raxInsert(tree,&quot;ANNI&quot;,4,&quot;value5&quot;,NULL);</span><br><span class="line"></span><br><span class="line">    /* 查找元素*/</span><br><span class="line">    int result = raxFind(tree,&quot;AG0&quot;,3);</span><br><span class="line"></span><br><span class="line">    /* 移除元素*/</span><br><span class="line">    raxRemove(tree,&quot;CIAO&quot;,4,NULL);</span><br><span class="line"></span><br><span class="line">    /* 释放树*/</span><br><span class="line">    raxFree(tree);</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Why"><a href="#Why" class="headerlink" title="Why"></a>Why</h3><h4 id="基础数据结构"><a href="#基础数据结构" class="headerlink" title="基础数据结构"></a>基础数据结构</h4><p>先来看下相关的数据结构的定义。</p>
+<h5 id="raxNode"><a href="#raxNode" class="headerlink" title="raxNode"></a><code>raxNode</code></h5><p>首先是基数树的节点<code>raxNode</code>，定义如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">typedef struct raxNode &#123;</span><br><span class="line">    uint32_t iskey:1;     /* 该节点是否包含key，占用1位字节*/</span><br><span class="line">    uint32_t isnull:1;    /* 该节点对应的value是否为null(如果是null的话就不用分配内存存储空数据)，占用1位字节*/</span><br><span class="line">    uint32_t iscompr:1;   /* 该节点是否是压缩节点，占用1位字节*/</span><br><span class="line">    uint32_t size:29;     /* 如果该是压缩节点，则size保存字符串的长度，如果是非压缩节点，size则保存子节点的数量，占用29位字节*/</span><br><span class="line">    unsigned char data[]; // 柔性数组，保存节点对应的数据(子节点指针，key字符串)，不占用字节</span><br><span class="line">&#125; raxNode;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><code>iskey</code>:该字段表示当前节点是否是一个完整的<code>key</code>。一个<code>raxNode</code>只有在该节点是<code>key</code>的时候才会保存对应的value。该字段占用一个字节。</li>
+<li><code>isnull</code>:该字段表示节点对应的value是否为null（只有在<code>iskey=1</code> 的情况下节点上才会保存value）。如果是null的话则可以不用分配内存保存value，节省内存。该字段占用一个字节。</li>
+<li><code>iscompr</code>: 该节点是否是压缩节点。</li>
+<li><code>size</code>:如果节点是压缩节点，则该字段保存压缩字符串的长度，如果是正常非压缩节点，则该字段保存子节点的个数。</li>
+<li><code>data</code>:数据域，用来保存对应的字符串，为指针对齐填充的字节，指向子节点的指针以及指向value的指针（如果是key的话则存在）。</li>
+</ul>
+<p><code>raxNode</code>节点可以分为两种：</p>
+<ol>
+<li>压缩节点。</li>
+<li>正常节点(非压缩节点)。</li>
+</ol>
+<p>所谓压缩节点是指该节点中保存的数据是在同一个字符串中连续存在的。</p>
+<p>正常节点（非压缩节点）是指节点中保存的数据是分属于不同的字符串的，即每个字符来自于不同的字符串。</p>
+<p>对于正常非压缩节点来说，节点中会保存<code>size</code>个指向子节点的指针。对于压缩节点来说，节点只会有一个子节点，也就只会保存一个指向子节点的指针。</p>
+<p><img src="https://i.loli.net/2018/12/04/5c060f067aec6.png" alt="head.png"></p>
+<p>假设节点中保存的字符串是<code>abc</code>，且该节点<code>iskey=1</code>，对应的<code>value=&quot;myvalue&quot;</code>，对于正常非压缩节点来说，布局如下：</p>
+<p><img src="https://i.loli.net/2018/12/04/5c060f07cea40.png" alt="normal.png"></p>
+<p>对于压缩节点来说，布局如下：</p>
+<p><img src="https://i.loli.net/2018/12/04/5c060f062a033.png" alt="compr.png"></p>
+<p>当然，如果节点<code>iskey=0</code>或者<code>iskey=1但是isnull=1</code>，则不会有指向value的指针。</p>
+<p>上面的图已经展示了，在<code>data</code>域中会保存4种数据：</p>
+<ol>
+<li>表示<code>key</code>的字符(串)。其中每个字符占用一个字节，并且按照字典顺序排序。</li>
+<li><p>内存对齐字节填充。</p>
+<p> 至于为什么需要内存对齐，这又是另外一个深奥的问题，本质上来说就是提高cpu access memory的性能。在我们这个场景中，字节对齐填充发生在<code>key</code>字符(串)与保存指向子节点指针之间，要求填充之后的数据的首地址按照<code>sizeof(void*)</code>字节对齐（<code>sizeof(void*)</code>的含义是获取一个指针的大小，指针的本质就是内存地址，结果取决于编译器目标平台的ABI，与目标平台的内存空间有关，对于32位的系统来说<code>sizeof(void*)=4</code>，对于64位系统来说<code>sizeof(void*)=8</code>），也就是说<code>raxNode</code>的<code>header</code>加上<code>size</code>个字节需要填充到<code>sizeof(void*)</code>的整数倍长度，字节对齐需要补充的字节数的计算公式为</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#define raxPadding(nodesize) ((sizeof(void*)-((nodesize+4) % sizeof(void*))) &amp; (sizeof(void*)-1))</span><br></pre></td></tr></table></figure>
+<p> 其中<code>nodesize</code>为当前节点的<code>key</code>的字符数量。</p>
+<ol start="3">
+<li>指向字节点的指针。对于压缩节点来说，只会有一个子节点，因此只会有一个指向子节点的指针。对于正常非压缩节点来说，会有<code>size</code>个子节点，所以会有<code>size</code>个指向子节点的指针。</li>
+<li>如果该节点<code>iskey=1</code>，则子节点后面还会有个指针，指向具体的<code>value</code>。</li>
+</ol>
+</li>
+</ol>
+<p>根据上面的分析，可以很明显的知道，一个<code>raxNode</code>所占的内存空间包括5部分：</p>
+<ol>
+<li>头部。占用字节大小为<code>sizeof(raxNode)</code>（恒等于4：1+1+1+29=32位）。</li>
+<li><code>size</code>个字符。占用字节大小为<code>size</code>。</li>
+<li>为了内存对齐填充的字节。占用字节大小为<code>((sizeof(void*)-((nodesize+4) % sizeof(void*))) &amp; (sizeof(void*)-1))</code>。</li>
+<li>指向子节点的指针。占用字节大小为<code>node-&gt;iscompr ? sizeof(raxNode*) : size * sizeof(raxNode *)</code>。</li>
+<li>指向value的指针。占用字节为<code>node-&gt;iskey ? sizeof(void*) : 0</code>。</li>
+</ol>
+<p>所以，对于指定的节点<code>n</code>所占用的内存大小计算公式为：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">#define raxNodeCurrentLength(n) ( \</span><br><span class="line">    sizeof(raxNode)+(n)-&gt;size+ \</span><br><span class="line">    raxPadding((n)-&gt;size)+ \</span><br><span class="line">    ((n)-&gt;iscompr ? sizeof(raxNode*) : sizeof(raxNode*)*(n)-&gt;size)+ \</span><br><span class="line">    (((n)-&gt;iskey &amp;&amp; !(n)-&gt;isnull)*sizeof(void*)) \</span><br><span class="line">)</span><br></pre></td></tr></table></figure></p>
+<p>获取节点中指向第一个子节点的指针的计算公式为:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">#define raxNodeFirstChildPtr(n) ((raxNode**) ( \</span><br><span class="line">    (n)-&gt;data + \</span><br><span class="line">    (n)-&gt;size + \</span><br><span class="line">    raxPadding((n)-&gt;size)))</span><br></pre></td></tr></table></figure></p>
+<p>从上面的分析也很容易得出节点中保存指向最后一个子节点的指针计算公式为:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">#define raxNodeLastChildPtr(n) ((raxNode**) ( \</span><br><span class="line">    ((char*)(n)) + \</span><br><span class="line">    raxNodeCurrentLength(n) - \</span><br><span class="line">    sizeof(raxNode*) - \</span><br><span class="line">    (((n)-&gt;iskey &amp;&amp; !(n)-&gt;isnull) ? sizeof(void*) : 0) \</span><br><span class="line">))</span><br></pre></td></tr></table></figure></p>
+<p>因为是要获取指向最后一个子节点的指针的首地址，所以需要减掉<code>sizeof(raxNode*)</code>。</p>
+<h5 id="rax"><a href="#rax" class="headerlink" title="rax"></a><code>rax</code></h5><p>基数树的定义如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">typedef struct rax &#123;</span><br><span class="line">    raxNode *head; // 基数树的根节点</span><br><span class="line">    uint64_t numele; // 元素的数量</span><br><span class="line">    uint64_t numnodes; // 节点的数量</span><br><span class="line">&#125; rax;</span><br></pre></td></tr></table></figure>
+<p>这个结构比较简单。</p>
+<p>插入一个元素，可能会生成多个<code>raxNode</code>节点。因此<code>numele &gt;= numnodes</code>。</p>
+<p>在radix tree中，如果连续的节点都是只有一个子节点，则这些节点可以被压缩成一个压缩节点。</p>
+<h5 id="raxStack"><a href="#raxStack" class="headerlink" title="raxStack"></a><code>raxStack</code></h5><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">typedef struct raxStack &#123;</span><br><span class="line">    void **stack; /* Points to static_items or an heap allocated array. */</span><br><span class="line">    size_t items, maxitems; /* Number of items contained and total space. */</span><br><span class="line">    /* Up to RAXSTACK_STACK_ITEMS items we avoid to allocate on the heap</span><br><span class="line">     * and use this static array of pointers instead. */</span><br><span class="line">    void *static_items[RAX_STACK_STATIC_ITEMS];</span><br><span class="line">    int oom; /* True if pushing into this stack failed for OOM at some point. */</span><br><span class="line">&#125; raxStack;</span><br></pre></td></tr></table></figure>
+<p>在对树进行遍历的时候，可以</p>
+<h4 id="API"><a href="#API" class="headerlink" title="API"></a><code>API</code></h4><p><code>rax</code>主要对外提供以下几个接口:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">// 新建一个rax</span><br><span class="line">rax *raxNew(void);</span><br><span class="line">// 往rax上面插入一个新的元素，s指向key，data指向value,如果key已存在，则更新</span><br><span class="line">int raxInsert(rax *rax, unsigned char *s, size_t len, void *data, void **old);</span><br><span class="line">// 往rax上面插入一个新的元素，如果key已经存在，则直接返回，不做更新</span><br><span class="line">int raxTryInsert(rax *rax, unsigned char *s, size_t len, void *data, void **old);</span><br><span class="line">int raxRemove(rax *rax, unsigned char *s, size_t len, void **old);//移除一个元素</span><br><span class="line">void *raxFind(rax *rax, unsigned char *s, size_t len);// 查找key</span><br><span class="line">void raxFree(rax *rax); // 释放rax</span><br><span class="line">void raxFreeWithCallback(rax *rax, void (*free_callback)(void*)); // 带回调的free</span><br></pre></td></tr></table></figure></p>
+<h4 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h4>
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Redis/" rel="tag"># Redis</a>
+          
+            <a href="/tags/源码/" rel="tag"># 源码</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/10/深入学习FutureTask/" rel="next" title="深入学习FutureTask">
+                <i class="fa fa-chevron-left"></i> 深入学习FutureTask
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/10/Redis源码学习之事件驱动/" rel="prev" title="Redis源码学习之事件驱动">
+                Redis源码学习之事件驱动 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#What"><span class="nav-number">1.</span> <span class="nav-text">What</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#How"><span class="nav-number">2.</span> <span class="nav-text">How</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Why"><span class="nav-number">3.</span> <span class="nav-text">Why</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#基础数据结构"><span class="nav-number">3.1.</span> <span class="nav-text">基础数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#raxNode"><span class="nav-number">3.1.1.</span> <span class="nav-text">raxNode</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#rax"><span class="nav-number">3.1.2.</span> <span class="nav-text">rax</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#raxStack"><span class="nav-number">3.1.3.</span> <span class="nav-text">raxStack</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#API"><span class="nav-number">3.2.</span> <span class="nav-text">API</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#具体实现"><span class="nav-number">3.3.</span> <span class="nav-text">具体实现</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

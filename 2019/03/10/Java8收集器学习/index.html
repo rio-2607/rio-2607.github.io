@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Stream,Java8,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="收集器是一种通用的，从流生成复杂值的结构。只需要把生成器作为参数传给collect()方法，任何流都可以使用它。Java8中所有的收集器都是位于java.util.stream.Collectors这个包下面。  转换成其他集合  Collectors.toList()收集器把流中数据转换成List对象。 Collectors.toSet()收集器把流中数据转换成Set对象。 Collectors">
+<meta name="keywords" content="Stream,Java8">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java8收集器学习">
+<meta property="og:url" content="http://yoursite.com/2019/03/10/Java8收集器学习/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="收集器是一种通用的，从流生成复杂值的结构。只需要把生成器作为参数传给collect()方法，任何流都可以使用它。Java8中所有的收集器都是位于java.util.stream.Collectors这个包下面。  转换成其他集合  Collectors.toList()收集器把流中数据转换成List对象。 Collectors.toSet()收集器把流中数据转换成Set对象。 Collectors">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-03-10T11:58:38.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Java8收集器学习">
+<meta name="twitter:description" content="收集器是一种通用的，从流生成复杂值的结构。只需要把生成器作为参数传给collect()方法，任何流都可以使用它。Java8中所有的收集器都是位于java.util.stream.Collectors这个包下面。  转换成其他集合  Collectors.toList()收集器把流中数据转换成List对象。 Collectors.toSet()收集器把流中数据转换成Set对象。 Collectors">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/03/10/Java8收集器学习/">
+
+
+
+
+
+  <title>Java8收集器学习 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/10/Java8收集器学习/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Java8收集器学习</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-10T19:58:38+08:00">
+                2019-03-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index">
+                    <span itemprop="name">Java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/10/Java8收集器学习/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/03/10/Java8收集器学习/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>收集器是一种通用的，从流生成复杂值的结构。只需要把生成器作为参数传给<code>collect()</code>方法，任何流都可以使用它。<br><code>Java8</code>中所有的收集器都是位于<code>java.util.stream.Collectors</code>这个包下面。</p>
+<ol>
+<li><p>转换成其他集合</p>
+<p> <code>Collectors.toList()</code>收集器把流中数据转换成<code>List</code>对象。<br> <code>Collectors.toSet()</code>收集器把流中数据转换成<code>Set</code>对象。<br> <code>Collectors.toCollection()</code>收集器把流中数据转换成<code>Collection</code>对象。<br> <code>toCollection()</code>收集器可以接受一个函数作为参数，用来指定生成的集合类型。比如指定生成的集合是<code>TreeSet</code></p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stream.collect(Collectors.toCollection(TreeSet::<span class="keyword">new</span>));</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>转换成值</p>
+<p> <code>maxBy</code>和<code>minBy</code>收集器允许用户按照某种特定的顺序生成一个值，比如要找出成员最多的一个乐队。</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Optional&lt;Artist&gt; <span class="title">biggestGroup</span><span class="params">(Stream&lt;Artist&gt; artists)</span> </span>&#123;</span><br><span class="line">    Function&lt;Artist,Long&gt; getCount = artist -&gt; artist.getMembers().count();</span><br><span class="line">    <span class="keyword">return</span> artists.collect(Collectors.maxBy(Comparators.comparing(getCount)));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> <code>averagingInt</code>收集器接受一个<code>Lambda</code>表达式作为参数，将流中的元素转换成为一个整数，然后计算平均值（同时存在<code>double</code>和<code>long</code>类型的重载方法）。比如要计算一组专辑中曲目的平均数。</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">averageNumberOfTracks</span><span class="params">(List&lt;Album&gt; albums)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> albums.stream()</span><br><span class="line">                 .collect(Collectors.averagingInt(album -&gt; album.getTrackList().size()));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>数据分块<br> 数据分块是指将数据流分成两个集合。<br> <code>partitioningBy</code>收集器接受一个<code>Predicate</code>对象作为参数，把一个流分成两部分，并根据布尔值返回一个<code>Map</code>到列表中。</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;Integer&gt; list = Stream.of(<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>,<span class="number">9</span>,<span class="number">10</span>,<span class="number">22</span>)</span><br><span class="line">                            .collect(Collectors.toList());</span><br><span class="line">        Map&lt;Boolean,List&lt;Integer&gt;&gt; resultMap = list.stream()</span><br><span class="line">                            .collect(Collectors.partitioningBy(input -&gt; input &gt; <span class="number">5</span>));</span><br><span class="line">        System.out.println(resultMap);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  输出结果为</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;<span class="keyword">false</span>=[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>], <span class="keyword">true</span>=[<span class="number">9</span>, <span class="number">10</span>, <span class="number">22</span>]&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>数据分组<br> 与数据分块只能将数据分为<code>true</code>和<code>false</code>不同，数据分组可以使用任意值对数据进行分组。<br> <code>groupingBy</code>收集器实现数据分组功能。<br> 公司雇员定义如下:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Employee</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String company;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> level;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Employee</span><span class="params">(String company,String name,<span class="keyword">int</span> level)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.company = company;</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">        <span class="keyword">this</span>.level = level;</span><br><span class="line">    &#125;        </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 现在需要把员工按公司分组</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Employee e1 = <span class="keyword">new</span> Employee(<span class="string">"alibaba"</span>,<span class="string">"Slogen"</span>,<span class="number">5</span>);</span><br><span class="line">        Employee e2 = <span class="keyword">new</span> Employee(<span class="string">"alibaba"</span>,<span class="string">"JiaChen"</span>,<span class="number">6</span>);</span><br><span class="line">        Employee e3 = <span class="keyword">new</span> Employee(<span class="string">"didi"</span>,<span class="string">"TangMen"</span>,<span class="number">6</span>);</span><br><span class="line">        Employee e4 = <span class="keyword">new</span> Employee(<span class="string">"xinmeida"</span>,<span class="string">"Slogan"</span>,<span class="number">4</span>);</span><br><span class="line">        List&lt;Employee&gt; employees = Stream.of(e1,e2,e3,e4).collect(Collectors.toList());</span><br><span class="line">        Map&lt;String,List&lt;Employee&gt;&gt; map = employees.stream().collect(Collectors.groupingBy(Employee::getCompany));</span><br><span class="line">       map.keySet().stream().forEach(company -&gt; System.out.println(company + <span class="string">":"</span> + map.get(company)));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> <code>map</code>输出结果为:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">alibaba:[Employee(company=alibaba, name=Slogen, level=<span class="number">5</span>), Employee(company=alibaba, name=JiaChen, level=<span class="number">6</span>)]</span><br><span class="line">didi:[Employee(company=didi, name=TangMen, level=<span class="number">6</span>)]</span><br><span class="line">xinmeida:[Employee(company=xinmeida, name=Slogan, level=<span class="number">4</span>)]</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>字符串<br> <code>Collectors.joining</code>收集器能够很方便的从一个流中得到一个字符串，允许用户提供一个分隔符（用以分割元素）、前缀和后缀。</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;String&gt; names = Stream.of(<span class="string">"slogen"</span>,<span class="string">"jiachen"</span>,<span class="string">"tangmen"</span>,<span class="string">"slogan"</span>).collect(Collectors.toList());</span><br><span class="line">        System.out.println(names.stream().collect(Collectors.joining(<span class="string">"|"</span>,<span class="string">"&lt;"</span>,<span class="string">"&gt;"</span>)));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  输出为</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;slogen|jiachen|tangmen|slogan&gt;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>组合收集器<br> 多个收集器可以组合在一起使用，实现强大的效果。<br> <code>groupingBy</code>收集器接一个收集器作为参数，这个当做参数的收集器叫做下游收集器，用以收集最后结果的一个子集。<br> 还是以上面的雇员为例，我们不需要把员工按照公司分组，我们需要知道的是每个公司的员工人数，则<code>grouping()</code>的第二个参数可以设置为收集器<code>counting()</code>，这样主收集器<code>grouping()</code>每一次的收集结果会传递给下游收集器<code>counting()</code>做二次收集，也就是统计个数。</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Employee e1 = <span class="keyword">new</span> Employee(<span class="string">"alibaba"</span>,<span class="string">"Slogen"</span>,<span class="number">5</span>);</span><br><span class="line">        Employee e2 = <span class="keyword">new</span> Employee(<span class="string">"alibaba"</span>,<span class="string">"JiaChen"</span>,<span class="number">6</span>);</span><br><span class="line">        Employee e3 = <span class="keyword">new</span> Employee(<span class="string">"didi"</span>,<span class="string">"TangMen"</span>,<span class="number">6</span>);</span><br><span class="line">        Employee e4 = <span class="keyword">new</span> Employee(<span class="string">"xinmeida"</span>,<span class="string">"Slogan"</span>,<span class="number">4</span>);</span><br><span class="line">        List&lt;Employee&gt; employees = Stream.of(e1,e2,e3,e4).collect(Collectors.toList());</span><br><span class="line">        <span class="comment">// 第二个参数设置为counting()收集器，用于收集主收集器每次收集到的数据的个数</span></span><br><span class="line">        Map&lt;String,Long&gt; map = employees.stream().collect(</span><br><span class="line">                Collectors.groupingBy(Employee::getCompany,counting()));</span><br><span class="line">        System.out.println(map);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 输出结果为</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;alibaba=<span class="number">2</span>, didi=<span class="number">1</span>, xinmeida=<span class="number">1</span>&#125;</span><br></pre></td></tr></table></figure>
+<p> 同样的，假设想要获取公司所有雇员的名字，按照常规的思路是先按照公司对雇员进行分类，然后再对每个公司的雇员进行遍历，获取雇员的名字，代码如下:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;    </span><br><span class="line">        Employee e1 = <span class="keyword">new</span> Employee(<span class="string">"alibaba"</span>,<span class="string">"Slogen"</span>,<span class="number">5</span>);</span><br><span class="line">        Employee e2 = <span class="keyword">new</span> Employee(<span class="string">"alibaba"</span>,<span class="string">"JiaChen"</span>,<span class="number">6</span>);</span><br><span class="line">        Employee e3 = <span class="keyword">new</span> Employee(<span class="string">"didi"</span>,<span class="string">"TangMen"</span>,<span class="number">6</span>);</span><br><span class="line">        Employee e4 = <span class="keyword">new</span> Employee(<span class="string">"xinmeida"</span>,<span class="string">"Slogan"</span>,<span class="number">4</span>);</span><br><span class="line">        List&lt;Employee&gt; employees = Stream.of(e1,e2,e3,e4).collect(Collectors.toList());</span><br><span class="line">        <span class="comment">// 1. 先把雇员按照公司进行分类</span></span><br><span class="line">        Map&lt;String,List&lt;Employee&gt;&gt; map = employees.stream().collect(Collectors.groupingBy(Employee::getCompany));</span><br><span class="line">        Map&lt;String,List&lt;String&gt;&gt; result = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">        <span class="comment">// 2. 遍历上一步结果，获取每个雇员的名字</span></span><br><span class="line">        map.forEach((key,value) -&gt; result.put(key,value.stream().map(Employee::getName).collect(Collectors.toList())));</span><br><span class="line">        System.out.println(result);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 上面的方法虽然也能够实现功能，但是不够<code>lambda</code>不够优雅。对于这样的场景，<code>Oracle</code>提供了<code>mapping</code>收集器，这个收集器作为下游收集器，可以执行类似于<code>map</code>的操作.</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Main</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        Employee e1 = <span class="keyword">new</span> Employee(<span class="string">"alibaba"</span>,<span class="string">"Slogen"</span>,<span class="number">5</span>);</span><br><span class="line">        Employee e2 = <span class="keyword">new</span> Employee(<span class="string">"alibaba"</span>,<span class="string">"JiaChen"</span>,<span class="number">6</span>);</span><br><span class="line">        Employee e3 = <span class="keyword">new</span> Employee(<span class="string">"didi"</span>,<span class="string">"TangMen"</span>,<span class="number">6</span>);</span><br><span class="line">        Employee e4 = <span class="keyword">new</span> Employee(<span class="string">"xinmeida"</span>,<span class="string">"Slogan"</span>,<span class="number">4</span>);</span><br><span class="line">        List&lt;Employee&gt; employees = Stream.of(e1,e2,e3,e4).collect(Collectors.toList());</span><br><span class="line">        <span class="comment">// mapping收集器作为下游收集器，对主收集器每次收集到的数据做二次收集,并把收集结果放到一个list中</span></span><br><span class="line">        Map&lt;String,List&lt;String&gt;&gt; map = employees.stream().collect(Collectors.groupingBy(Employee::getCompany,Collectors.mapping(Employee::getName,Collectors.toList())));</span><br><span class="line">        System.out.println(map);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>自定义收集器<br> todo</p>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Stream/" rel="tag"># Stream</a>
+          
+            <a href="/tags/Java8/" rel="tag"># Java8</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/10/Java对象大小/" rel="next" title="Java对象大小">
+                <i class="fa fa-chevron-left"></i> Java对象大小
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/10/Bootstrap源码分析/" rel="prev" title="Bootstrap源码分析">
+                Bootstrap源码分析 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

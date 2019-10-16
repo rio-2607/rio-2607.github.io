@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Netty,源码分析,博客迁移,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="关于isActive()方法：   isActive()这个方法在整个流程中都会用到，用来判断对应的链路是否激活。定义如下：   1234/** * Return &amp;#123;@code true&amp;#125; if the &amp;#123;@link Channel&amp;#125; is active and so connected. */boolean isActive();  Server端：">
+<meta name="keywords" content="Netty,源码分析,博客迁移">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Netty中的一些小问题">
+<meta property="og:url" content="http://yoursite.com/2019/03/10/Netty中的一些小问题/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="关于isActive()方法：   isActive()这个方法在整个流程中都会用到，用来判断对应的链路是否激活。定义如下：   1234/** * Return &amp;#123;@code true&amp;#125; if the &amp;#123;@link Channel&amp;#125; is active and so connected. */boolean isActive();  Server端：">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-03-10T11:58:38.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Netty中的一些小问题">
+<meta name="twitter:description" content="关于isActive()方法：   isActive()这个方法在整个流程中都会用到，用来判断对应的链路是否激活。定义如下：   1234/** * Return &amp;#123;@code true&amp;#125; if the &amp;#123;@link Channel&amp;#125; is active and so connected. */boolean isActive();  Server端：">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/03/10/Netty中的一些小问题/">
+
+
+
+
+
+  <title>Netty中的一些小问题 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/10/Netty中的一些小问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Netty中的一些小问题</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-10T19:58:38+08:00">
+                2019-03-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Netty/" itemprop="url" rel="index">
+                    <span itemprop="name">Netty</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/10/Netty中的一些小问题/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/03/10/Netty中的一些小问题/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <ul>
+<li><p>关于<code>isActive()</code>方法：</p>
+<p>  <code>isActive()</code>这个方法在整个流程中都会用到，用来判断对应的链路是否激活。定义如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Return &#123;<span class="doctag">@code</span> true&#125; if the &#123;<span class="doctag">@link</span> Channel&#125; is active and so connected.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">boolean</span> <span class="title">isActive</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><code>Server</code>端：</p>
+</blockquote>
+<p>  <code>Server</code>端的实现在<code>NioServerSocketChannel.java</code>中，实现如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isActive</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> javaChannel().socket().isBound();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  直接调用<code>ServerSocket.isBound()</code>方法，该方法的作用是返回<code>ServerSocket</code>的绑定状态，如果<code>ServerSocket</code>已经成功绑定到一个地址之后会返回<code>true</code>。可见，对于<code>Server</code>端，只要<code>ServerChannel</code>成功绑定到一个地址之后就认为处于激活状态。</p>
+<blockquote>
+<p><code>Client</code>端：</p>
+</blockquote>
+<p>  <code>Client</code>端的实现在<code>NioSocketChannel.java</code>中，实现如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isActive</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    SocketChannel ch = javaChannel();</span><br><span class="line">    <span class="keyword">return</span> ch.isOpen() &amp;&amp; ch.isConnected();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  <code>ch.isConnected()</code>作用是Tells whether or not this channel’s network socket is connected.Return true if, and only if, this channel’s network socket is {@link #isOpen open} and connected。<br>  可见对于<code>Client</code>,只有在已经打开并且连接上服务期之后才处于激活状态。</p>
+</li>
+</ul>
+<ul>
+<li><p><code>channelRegistered()</code>方法：</p>
+<p>  <code>channelRegistered()</code>的定义如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * The &#123;<span class="doctag">@link</span> Channel&#125; of the &#123;<span class="doctag">@link</span> ChannelHandlerContext&#125; was registered with its &#123;<span class="doctag">@link</span> EventLoop&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">channelRegistered</span><span class="params">(ChannelHandlerContext ctx)</span> <span class="keyword">throws</span> Exception</span>;</span><br></pre></td></tr></table></figure>
+<p>  从注释里面可以看到是在<code>Channel</code>绑定到<code>Eventloop</code>上面的时候调用的。</p>
+<p>  不管是<code>Server</code>还是<code>Client</code>，绑定到<code>Eventloop</code>的时候，最终都是调用<code>Abstract.initAndRegister()</code>这个方法上(<code>Server</code>是在<code>AbstractBootstrap.doBind()</code>的时候调用的,<code>Client</code>是在<code>Bootstrap.doConnect()</code>的时候调用的)。<br>  <code>initAndRegister()</code>方法定义如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">final</span> ChannelFuture <span class="title">initAndRegister</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> Channel channel = channelFactory().newChannel();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        init(channel);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        channel.unsafe().closeForcibly();</span><br><span class="line">        <span class="comment">// as the Channel is not registered yet we need to force the usage of the GlobalEventExecutor</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> DefaultChannelPromise(channel, GlobalEventExecutor.INSTANCE).setFailure(t);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 把channel绑定到Eventloop对象上面去</span></span><br><span class="line">    ChannelFuture regFuture = group().register(channel);</span><br><span class="line">    <span class="keyword">if</span> (regFuture.cause() != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (channel.isRegistered()) &#123;</span><br><span class="line">            channel.close();</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            channel.unsafe().closeForcibly();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> regFuture;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  继续跟踪下去会定位到<code>AbstractChannel.AbstractUnsafe.register0()</code>方法上.</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">register0</span><span class="params">(ChannelPromise promise)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// check if the channel is still open as it could be closed in the mean time when the register</span></span><br><span class="line">            <span class="comment">// call was outside of the eventLoop</span></span><br><span class="line">            <span class="keyword">if</span> (!promise.setUncancellable() || !ensureOpen(promise)) &#123;</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// 做实际的绑定动作。把Channel感兴趣的事件注册到Eventloop.selector上面.具体实现在Abstract.doRegister()方法内</span></span><br><span class="line">            doRegister();</span><br><span class="line">            registered = <span class="keyword">true</span>;</span><br><span class="line">            safeSetSuccess(promise);</span><br><span class="line">            <span class="comment">// 调用ChannelPipeline中的ChannelHandler的channelRegister()方法</span></span><br><span class="line">            pipeline.fireChannelRegistered();</span><br><span class="line">            <span class="keyword">if</span> (isActive()) &#123;</span><br><span class="line">                <span class="comment">// 如果当前链路已经激活，则调用channelActive()方法</span></span><br><span class="line">                pipeline.fireChannelActive();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            <span class="comment">// Close the channel directly to avoid FD leak.</span></span><br><span class="line">            closeForcibly();</span><br><span class="line">            closeFuture.setClosed();</span><br><span class="line">            safeSetFailure(promise, t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>  从上面代码可以看到，在调用<code>doRegister()</code>把对应的<code>Channel</code>注册到对应的<code>Eventloop.Selector</code>上面去之后，就会调用<code>pipeline.fireChannelRegistered()</code>方法触发<code>ChannelPipeline</code>里面注册的<code>ChannelHandler</code>的<code>channleActive()</code>方法的调用。</p>
+<p>  从上面的代码也可以看出，在调用完<code>pipeline.fireChannelRegistered()</code>之后，紧接着会调用<code>isActive()</code>判断当前链路是否激活，如果激活了则会调用<code>pipeline.fireChannelActive()</code>方法。关于<code>isActive()</code>方法，上面说了。</p>
+<p>  这个时候，对于<code>Client</code>和<code>Server</code>都还没有激活，所以，这个时候不管是<code>Server</code>还是<code>Client</code>都不会<code>pipeline.fireChanenlActive()</code>方法，至于什么时候调用下面会说。</p>
+</li>
+<li><p><code>channelActive()</code>方法</p>
+<blockquote>
+<p>Client端:<code>connect()</code>之后触发</p>
+</blockquote>
+<p>  对于<code>Client</code>是在<code>connect()</code>成功之后触发的。代码在<code>AbstractNioChannel.connect()</code>中。</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">connect</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">final</span> SocketAddress remoteAddress, <span class="keyword">final</span> SocketAddress localAddress, <span class="keyword">final</span> ChannelPromise promise)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!promise.setUncancellable() || !ensureOpen(promise)) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (connectPromise != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"connection attempt already made"</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">boolean</span> wasActive = isActive();</span><br><span class="line">            <span class="comment">// doConnect()进行实际的连接</span></span><br><span class="line">            <span class="keyword">if</span> (doConnect(remoteAddress, localAddress)) &#123;</span><br><span class="line">                <span class="comment">// 连接成功之后做一些列处理</span></span><br><span class="line">                fulfillConnectPromise(promise, wasActive);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">               <span class="comment">// 其他代码</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            promise.tryFailure(annotateConnectException(t, remoteAddress));</span><br><span class="line">            closeIfClosed();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>  <code>fulfillConnectProimse()</code>代码如下:</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">fulfillConnectPromise</span><span class="params">(ChannelPromise promise, <span class="keyword">boolean</span> wasActive)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 其他代码</span></span><br><span class="line">        <span class="comment">// Regardless if the connection attempt was cancelled, channelActive() event should be triggered,</span></span><br><span class="line">        <span class="comment">// because what happened is what happened.</span></span><br><span class="line">        <span class="comment">// 只有在调用doConnect()之前没有激活且调用之后处于active状态才会调用channelActive()方法，保证只有第一次连接成功之后才会调用一次。</span></span><br><span class="line">        <span class="keyword">if</span> (!wasActive &amp;&amp; isActive()) &#123;</span><br><span class="line">            <span class="comment">// 调用ChannelPipeline中的ChannelHandler的channelActive()方法</span></span><br><span class="line">            pipeline().fireChannelActive();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// If a user cancelled the connection attempt, close the channel, which is followed by channelInactive().</span></span><br><span class="line">        <span class="keyword">if</span> (!promiseSet) &#123;</span><br><span class="line">            close(voidPromise());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>  从上面的代码中可以看到，<code>channelActive()</code>只会在连接成功的时候被调用一次。</p>
+<blockquote>
+<p><code>Server</code>端：<code>bind()</code>方法</p>
+</blockquote>
+<p>  对于<code>Server</code>端，在调用<code>bind()</code>方法之后会进入到<code>AbstractBootstrap.bind()</code>方法中，最后会跟踪到<code>AbstractChannel.bind()</code>方法中有</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">bind</span><span class="params">(<span class="keyword">final</span> SocketAddress localAddress, <span class="keyword">final</span> ChannelPromise promise)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (!promise.setUncancellable() || !ensureOpen(promise)) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 其他代码</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">boolean</span> wasActive = isActive();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 把socket与端口进行绑定</span></span><br><span class="line">            doBind(localAddress);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            safeSetFailure(promise, t);</span><br><span class="line">            closeIfClosed();</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (!wasActive &amp;&amp; isActive()) &#123;</span><br><span class="line">            <span class="comment">// 启动一个task，调用channelActive()方法</span></span><br><span class="line">            invokeLater(<span class="keyword">new</span> OneTimeTask() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    pipeline.fireChannelActive();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        safeSetSuccess(promise);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>  在这里同样是会判断是不是第一次激活，如果是第一次激活则调用<code>ChannelPipeline</code>中的<code>ChannelHandler</code>的<code>channelActive()</code>方法。</p>
+</li>
+<li><p><code>fireChannelRead()</code></p>
+<p>  <code>fireChannelRead()</code>定义如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A &#123;<span class="doctag">@link</span> Channel&#125; received a message.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This will result in having the &#123;<span class="doctag">@link</span> ChannelInboundHandler#channelRead(ChannelHandlerContext, Object)&#125;</span></span><br><span class="line"><span class="comment"> * method  called of the next &#123;<span class="doctag">@link</span> ChannelInboundHandler&#125; contained in the  &#123;<span class="doctag">@link</span> ChannelPipeline&#125; of the</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> Channel&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">ChannelHandlerContext <span class="title">fireChannelRead</span><span class="params">(Object msg)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>  从注释中可以看出<code>fireChannelRead()</code>方法是在底层套接字收到数据之后被调用。</p>
+<p>  首先定位到<code>NioEventLoop.processSelectedKey()</code>方法中：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">processSelectedKey</span><span class="params">(SelectionKey k, AbstractNioChannel ch)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> NioUnsafe unsafe = ch.unsafe();</span><br><span class="line">    <span class="keyword">if</span> (!k.isValid()) &#123;</span><br><span class="line">        <span class="comment">// close the channel if the key is not valid anymore</span></span><br><span class="line">        unsafe.close(unsafe.voidPromise());</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">int</span> readyOps = k.readyOps();</span><br><span class="line">        <span class="comment">// Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead</span></span><br><span class="line">        <span class="comment">// to a spin loop</span></span><br><span class="line">        <span class="keyword">if</span> ((readyOps &amp; (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != <span class="number">0</span> || readyOps == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">// 收到 OP_READ事件，表示底层有数据到来</span></span><br><span class="line">            unsafe.read();</span><br><span class="line">            <span class="keyword">if</span> (!ch.isOpen()) &#123;</span><br><span class="line">                <span class="comment">// Connection already closed - no need to handle write.</span></span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 其他无关代码</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (CancelledKeyException ignored) &#123;</span><br><span class="line">        unsafe.close(unsafe.voidPromise());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  可以看到，当检测到时数据之后，会调用<code>unsafe.read()</code>方法进行实际的数据读写。</p>
+<blockquote>
+<p><code>Client</code>对象：</p>
+</blockquote>
+<p>  <code>Client</code>对象的<code>read()</code>方法的实现在<code>AbstractNioByteChannel.read()</code>方法中，代码如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">read</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> ChannelConfig config = config();</span><br><span class="line">        <span class="keyword">if</span> (!config.isAutoRead() &amp;&amp; !isReadPending()) &#123;</span><br><span class="line">            <span class="comment">// ChannelConfig.setAutoRead(false) was called in the meantime</span></span><br><span class="line">            removeReadOp();</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">final</span> ChannelPipeline pipeline = pipeline();</span><br><span class="line">        <span class="keyword">final</span> ByteBufAllocator allocator = config.getAllocator();</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> maxMessagesPerRead = config.getMaxMessagesPerRead();</span><br><span class="line">        RecvByteBufAllocator.Handle allocHandle = <span class="keyword">this</span>.allocHandle;</span><br><span class="line">        <span class="keyword">if</span> (allocHandle == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">this</span>.allocHandle = allocHandle = config.getRecvByteBufAllocator().newHandle();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        ByteBuf byteBuf = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">int</span> messages = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">boolean</span> close = <span class="keyword">false</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">int</span> totalReadAmount = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">boolean</span> readPendingReset = <span class="keyword">false</span>;</span><br><span class="line">            <span class="keyword">do</span> &#123;</span><br><span class="line">                byteBuf = allocHandle.allocate(allocator);</span><br><span class="line">                <span class="keyword">int</span> writable = byteBuf.writableBytes();</span><br><span class="line">                <span class="keyword">int</span> localReadAmount = doReadBytes(byteBuf);</span><br><span class="line">                <span class="keyword">if</span> (localReadAmount &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="comment">// not was read release the buffer</span></span><br><span class="line">                    byteBuf.release();</span><br><span class="line">                    close = localReadAmount &lt; <span class="number">0</span>;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">if</span> (!readPendingReset) &#123;</span><br><span class="line">                    readPendingReset = <span class="keyword">true</span>;</span><br><span class="line">                    setReadPending(<span class="keyword">false</span>);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// 没接受到数据都会调用fireChannelRead()方法</span></span><br><span class="line">                pipeline.fireChannelRead(byteBuf);</span><br><span class="line">                byteBuf = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (totalReadAmount &gt;= Integer.MAX_VALUE - localReadAmount) &#123;</span><br><span class="line">                    <span class="comment">// Avoid overflow.</span></span><br><span class="line">                    totalReadAmount = Integer.MAX_VALUE;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                totalReadAmount += localReadAmount;</span><br><span class="line"></span><br><span class="line">                <span class="comment">// stop reading</span></span><br><span class="line">                <span class="keyword">if</span> (!config.isAutoRead()) &#123;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (localReadAmount &lt; writable) &#123;</span><br><span class="line">                    <span class="comment">// Read less than what the buffer can hold,</span></span><br><span class="line">                    <span class="comment">// which might mean we drained the recv buffer completely.</span></span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">while</span> (++ messages &lt; maxMessagesPerRead);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 数据接收完成，调用fireChannelReadComplete()方法</span></span><br><span class="line">            pipeline.fireChannelReadComplete();</span><br><span class="line">            allocHandle.record(totalReadAmount);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (close) &#123;</span><br><span class="line">                closeOnRead(pipeline);</span><br><span class="line">                close = <span class="keyword">false</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            handleReadException(pipeline, byteBuf, t, close);</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">// Check if there is a readPending which was not processed yet.</span></span><br><span class="line">            <span class="comment">// This could be for two reasons:</span></span><br><span class="line">            <span class="comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method</span></span><br><span class="line">            <span class="comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method</span></span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            <span class="comment">// See https://github.com/netty/netty/issues/2254</span></span><br><span class="line">            <span class="keyword">if</span> (!config.isAutoRead() &amp;&amp; !isReadPending()) &#123;</span><br><span class="line">                removeReadOp();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p><code>Server</code>端：</p>
+</blockquote>
+<p>  <code>Server</code>端的<code>read()</code>实现是在<code>AbstractNioMessageChanenl.read()</code>方法中，代码如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">read</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="function"><span class="keyword">assert</span> <span class="title">eventLoop</span><span class="params">()</span>.<span class="title">inEventLoop</span><span class="params">()</span></span>;</span><br><span class="line">        <span class="keyword">final</span> ChannelConfig config = config();</span><br><span class="line">        <span class="keyword">if</span> (!config.isAutoRead() &amp;&amp; !isReadPending()) &#123;</span><br><span class="line">            <span class="comment">// ChannelConfig.setAutoRead(false) was called in the meantime</span></span><br><span class="line">            removeReadOp();</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> maxMessagesPerRead = config.getMaxMessagesPerRead();</span><br><span class="line">        <span class="keyword">final</span> ChannelPipeline pipeline = pipeline();</span><br><span class="line">        <span class="keyword">boolean</span> closed = <span class="keyword">false</span>;</span><br><span class="line">        Throwable exception = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">                    <span class="keyword">int</span> localRead = doReadMessages(readBuf);</span><br><span class="line">                    <span class="keyword">if</span> (localRead == <span class="number">0</span>) &#123;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">if</span> (localRead &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                        closed = <span class="keyword">true</span>;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// stop reading and remove op</span></span><br><span class="line">                    <span class="keyword">if</span> (!config.isAutoRead()) &#123;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (readBuf.size() &gt;= maxMessagesPerRead) &#123;</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">                exception = t;</span><br><span class="line">            &#125;</span><br><span class="line">            setReadPending(<span class="keyword">false</span>);</span><br><span class="line">            <span class="keyword">int</span> size = readBuf.size();</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; size; i ++) &#123;</span><br><span class="line">                <span class="comment">// 接收到数据，调用fireChannelRead()方法</span></span><br><span class="line">                pipeline.fireChannelRead(readBuf.get(i));</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            readBuf.clear();</span><br><span class="line">            <span class="comment">// 数据接收完成，调用fireChannelReadComplete()</span></span><br><span class="line">            pipeline.fireChannelReadComplete();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (exception != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">if</span> (exception <span class="keyword">instanceof</span> IOException &amp;&amp; !(exception <span class="keyword">instanceof</span> PortUnreachableException)) &#123;</span><br><span class="line">                    <span class="comment">// ServerChannel should not be closed even on IOException because it can often continue</span></span><br><span class="line">                    <span class="comment">// accepting incoming connections. (e.g. too many open files)</span></span><br><span class="line">                    closed = !(AbstractNioMessageChannel.<span class="keyword">this</span> <span class="keyword">instanceof</span> ServerChannel);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                pipeline.fireExceptionCaught(exception);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (closed) &#123;</span><br><span class="line">                <span class="keyword">if</span> (isOpen()) &#123;</span><br><span class="line">                    close(voidPromise());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">// Check if there is a readPending which was not processed yet.</span></span><br><span class="line">            <span class="comment">// This could be for two reasons:</span></span><br><span class="line">            <span class="comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelRead(...) method</span></span><br><span class="line">            <span class="comment">// * The user called Channel.read() or ChannelHandlerContext.read() in channelReadComplete(...) method</span></span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            <span class="comment">// See https://github.com/netty/netty/issues/2254</span></span><br><span class="line">            <span class="keyword">if</span> (!config.isAutoRead() &amp;&amp; !isReadPending()) &#123;</span><br><span class="line">                removeReadOp();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>  可以看到在接收到数据后会调用<code>fireChannelRead()</code>方法，数据接收完成之后会调用<code>fireChannelReadComplete()</code>方法.</p>
+</li>
+<li><p><code>fireChannelInactive()</code>:</p>
+<p>  <code>fireChannelInactive()</code>方法定义如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A &#123;<span class="doctag">@link</span> Channel&#125; is inactive now, which means it is closed.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This will result in having the  &#123;<span class="doctag">@link</span> ChannelInboundHandler#channelInactive(ChannelHandlerContext)&#125; method</span></span><br><span class="line"><span class="comment"> * called of the next  &#123;<span class="doctag">@link</span> ChannelInboundHandler&#125; contained in the  &#123;<span class="doctag">@link</span> ChannelPipeline&#125; of the</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> Channel&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">ChannelHandlerContext <span class="title">fireChannelInactive</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+<p>  <code>fireChannelnactive()</code>方法在两个地方会被调用：<code>Channel.close()</code>和<code>Channel.disconnect()</code>:</p>
+<blockquote>
+<p><code>Channel.close()</code></p>
+</blockquote>
+<p>  从注释中可以看出<code>fireChannelInactive()</code>方法是在<code>Channel</code>被<code>close()</code>的时候被调用的。</p>
+<p>  从<code>Channel.close()</code>开始跟踪，进入到<code>Abstract.close()</code>，该方法调用的是<code>ChannelPipeline.close()</code>，进一步跟踪到<code>DefaultPipeline.close()</code>中有</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">(ChannelHandlerContext ctx, ChannelPromise promise)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    unsafe.close(promise);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  调用的实际上是<code>Unsafe.close()</code>方法。</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">(<span class="keyword">final</span> ChannelPromise promise)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 其他省略代码</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 实际的关闭动作</span></span><br><span class="line">        doClose();</span><br><span class="line">        closeFuture.setClosed();</span><br><span class="line">        safeSetSuccess(promise);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        closeFuture.setClosed();</span><br><span class="line">        safeSetFailure(promise, t);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Fail all the queued messages</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        outboundBuffer.failFlushed(CLOSED_CHANNEL_EXCEPTION);</span><br><span class="line">        outboundBuffer.close(CLOSED_CHANNEL_EXCEPTION);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="comment">// 确保是从Active --&gt; Inactive状态才会执行下面的方法</span></span><br><span class="line">        <span class="keyword">if</span> (wasActive &amp;&amp; !isActive()) &#123;</span><br><span class="line">            invokeLater(<span class="keyword">new</span> OneTimeTask() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="comment">// 触发channelInactive()的执行</span></span><br><span class="line">                    pipeline.fireChannelInactive();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 触发解注册动作</span></span><br><span class="line">        deregister(voidPromise());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  可以看到在调用<code>doClose()</code>之后会触发<code>pipeline.fireChannelInactive()</code>方法的执行。在调用前会先确认状态是从<code>Active</code>—&gt;<code>Inactive</code>。</p>
+<blockquote>
+<p><code>Channel.disconnect()</code></p>
+</blockquote>
+<p>  从<code>Channel.disconnect()</code>跟踪进去最后会跟踪到<code>AbstractChannel.disconnect()</code>中，有</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">disconnect</span><span class="params">(<span class="keyword">final</span> ChannelPromise promise)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!promise.setUncancellable()) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">boolean</span> wasActive = isActive();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 关闭连接。Server端支持这个操作，对于Client端，会调用javaChannel().close()关闭连接</span></span><br><span class="line">        doDisconnect();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        safeSetFailure(promise, t);</span><br><span class="line">        closeIfClosed();</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (wasActive &amp;&amp; !isActive()) &#123;</span><br><span class="line">        <span class="comment">// 状态从Active --&gt; Inactive</span></span><br><span class="line">        invokeLater(<span class="keyword">new</span> OneTimeTask() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="comment">// 触发ChannelHandler的channelInactive()方法的执行</span></span><br><span class="line">                pipeline.fireChannelInactive();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    safeSetSuccess(promise);</span><br><span class="line">    closeIfClosed(); <span class="comment">// doDisconnect() might have closed the channel</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p><code>fireChannelUnregistered()</code>方法</p>
+<p>  <code>fireChannelUnregistered()</code>定义如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A &#123;<span class="doctag">@link</span> Channel&#125; was unregistered from its &#123;<span class="doctag">@link</span> EventLoop&#125;.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This will result in having the  &#123;<span class="doctag">@link</span> ChannelInboundHandler#channelUnregistered(ChannelHandlerContext)&#125; method</span></span><br><span class="line"><span class="comment"> * called of the next  &#123;<span class="doctag">@link</span> ChannelInboundHandler&#125; contained in the  &#123;<span class="doctag">@link</span> ChannelPipeline&#125; of the</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> Channel&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">ChannelPipeline <span class="title">fireChannelUnregistered</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+<p>  从注释中可以看出<code>fireChannelUnregistered()</code>方法是在<code>Channel</code>从<code>Eventloop</code>中解注册的时候被调用的。在上面讲<code>fireChanenlInactive()</code>的时候提到了当调用<code>Channel.close()</code>的时候最后会调用<code>deregister(voidPromise())</code>方法。这个方法如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">deregister</span><span class="params">(<span class="keyword">final</span> ChannelPromise promise)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!promise.setUncancellable()) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (!registered) &#123;</span><br><span class="line">        safeSetSuccess(promise);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 实际执行解注册动作</span></span><br><span class="line">        doDeregister();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">        logger.warn(<span class="string">"Unexpected exception occurred while deregistering a channel."</span>, t);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (registered) &#123;</span><br><span class="line">            registered = <span class="keyword">false</span>;</span><br><span class="line">            invokeLater(<span class="keyword">new</span> OneTimeTask() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="comment">// 在这里会触发channelUngister()的执行</span></span><br><span class="line">                    pipeline.fireChannelUnregistered();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">            safeSetSuccess(promise);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// Some transports like local and AIO does not allow the deregistration of</span></span><br><span class="line">            <span class="comment">// an open channel.  Their doDeregister() calls close().  Consequently,</span></span><br><span class="line">            <span class="comment">// close() calls deregister() again - no need to fire channelUnregistered.</span></span><br><span class="line">            safeSetSuccess(promise);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  可以知道<code>channelUngister()</code>方法是在<code>Channel.close()</code>的时候被触发执行的。</p>
+<p>  顺带说下关于解注册，<code>doDeregister()</code>方法如下：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doDeregister</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    eventLoop().cancel(selectionKey());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  改方法实际上就是调用<code>Channel</code>对应的<code>SelectionKey.cancel()</code>方法。</p>
+</li>
+</ul>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Netty/" rel="tag"># Netty</a>
+          
+            <a href="/tags/源码分析/" rel="tag"># 源码分析</a>
+          
+            <a href="/tags/博客迁移/" rel="tag"># 博客迁移</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/10/Netty连接超时分析/" rel="next" title="Netty连接超时分析">
+                <i class="fa fa-chevron-left"></i> Netty连接超时分析
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/10/Java对象大小/" rel="prev" title="Java对象大小">
+                Java对象大小 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

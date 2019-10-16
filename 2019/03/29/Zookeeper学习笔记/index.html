@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="博客迁移,Zookeeper,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="本文由原博客迁移而来。  在Zookeeper中，事务是指能够改变Zookeeper服务器状态的操作，称之为事务操作或者更新操作，一般包括数据节点的创建与删除、数据节点内容更新和客户端会话创建与失效等操作。 临时节点是在客户端会话失效，而非TCP链接断开的时候会被自动清除。 Zookeeper规定临时节点不能创建子节点。也就是说临时节点只能是叶子节点。 Zookeeper中每个数据节点除了存储数据">
+<meta name="keywords" content="博客迁移,Zookeeper">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Zookeeper学习笔记">
+<meta property="og:url" content="http://yoursite.com/2019/03/29/Zookeeper学习笔记/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="本文由原博客迁移而来。  在Zookeeper中，事务是指能够改变Zookeeper服务器状态的操作，称之为事务操作或者更新操作，一般包括数据节点的创建与删除、数据节点内容更新和客户端会话创建与失效等操作。 临时节点是在客户端会话失效，而非TCP链接断开的时候会被自动清除。 Zookeeper规定临时节点不能创建子节点。也就是说临时节点只能是叶子节点。 Zookeeper中每个数据节点除了存储数据">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-03-29T06:07:38.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Zookeeper学习笔记">
+<meta name="twitter:description" content="本文由原博客迁移而来。  在Zookeeper中，事务是指能够改变Zookeeper服务器状态的操作，称之为事务操作或者更新操作，一般包括数据节点的创建与删除、数据节点内容更新和客户端会话创建与失效等操作。 临时节点是在客户端会话失效，而非TCP链接断开的时候会被自动清除。 Zookeeper规定临时节点不能创建子节点。也就是说临时节点只能是叶子节点。 Zookeeper中每个数据节点除了存储数据">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/03/29/Zookeeper学习笔记/">
+
+
+
+
+
+  <title>Zookeeper学习笔记 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/29/Zookeeper学习笔记/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Zookeeper学习笔记</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-29T14:07:38+08:00">
+                2019-03-29
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Zookeeper/" itemprop="url" rel="index">
+                    <span itemprop="name">Zookeeper</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/29/Zookeeper学习笔记/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/03/29/Zookeeper学习笔记/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>本文由<a href="http://beautyboss.farbox.com/post/zookeeper/zookeeperxue-xi-bi-ji#main" target="_blank" rel="noopener">原博客</a>迁移而来。</p>
+<ol>
+<li>在<code>Zookeeper</code>中，事务是指能够改变<code>Zookeeper</code>服务器状态的操作，称之为事务操作或者更新操作，一般包括数据节点的创建与删除、数据节点内容更新和客户端会话创建与失效等操作。</li>
+<li>临时节点是在<strong><em>客户端会话失效，而非TCP链接断开</em></strong>的时候会被自动清除。</li>
+<li><code>Zookeeper</code>规定临时节点不能创建子节点。也就是说临时节点只能是叶子节点。</li>
+<li><code>Zookeeper</code>中每个数据节点除了存储数据内容外，还会存储数据节点本身的一些状态信息。</li>
+<li><p><code>Stat</code>结构字段和说明如下</p>
+<p> |状态属性|说明|<br> |:—:|:—:|<br> |<code>czxid</code>|<code>Created ZXID</code>，表示该数据节点被创建时候的事务ID|<br> |<code>mzxid</code>|<code>Modified ZXID</code>，表示该节点最后一次被更新时的事务ID|<br> |<code>ctime</code>|<code>Created Time</code>，表示节点被创建的时间|<br> |<code>mtime</code>|<code>Modified Time</code>，表示该节点最后一次被更新的时间|<br> |<code>dataVersion</code>|数据节点的版本号。当前数据节点数据内容的版本号|<br> |<code>cversion</code>|子节点的版本号。当前数据节点子节点的版本号|<br> |<code>aversion</code>|当前数据节点ACL变更版本号|<br> |<code>ephemeralOwner</code>|创建该临时节点的会话的<code>sessionID</code>。如果该节点是持久节点，那么这个属性值为0|<br> |<code>dataLength</code>|数据内容的长度|<br> |<code>numChildren</code>|当前节点的子节点个数|<br> |<code>pzxid</code>|表示该节点的子节点列表最后一次被修改时的ID。注意，只有子节点列表个数变更了才会修改<code>pzxid</code>，子节点内容变更不会影响<code>pzxid</code>|</p>
+</li>
+<li><p><code>version</code>表示的是数据节点内容变更的次数。强调的是<strong><em>变更次数</em></strong>。因此即使前后两次的变更并没有修改数据的内容，<code>version</code>的值也会发生变化。</p>
+</li>
+<li>乐观锁控制事务分为三个阶段：数据读取、写入校验和数据写入。</li>
+<li><code>Zookeeper</code>中使用<code>version</code>来实现乐观锁机制。</li>
+<li><p><code>Watcher</code>特性总结:</p>
+<ol>
+<li>一致性。无论是客户端还是服务端，一旦一个<code>Watcher</code>被触发，<code>Zookeeper</code>都会将其从相应的存储中移除。所以在<code>Watcher</code>的使用上要反复注册。</li>
+<li>客户端串行执行。客户端<code>Watcher</code>回调是个串行同步的过程。</li>
+<li>轻量。<code>WatchedEvent</code>是<code>Zookeeper</code>整个<code>Watcher</code>通知机制的最小通知单元。包含三部分:通知状态、事件类型和节点路径。<code>Zookeeper</code>的<code>Watcher</code>只会通知客户端指定数据节点的数据内容发生了变更，而对于原始数据以及变更后的新数据都无法从这个事件中直接获取。而是需要<strong><em>客户端主动去重新获取数据</em></strong>。  </li>
+</ol>
+</li>
+<li><p><code>Zookeeper</code>提供了多种权限控制模式(<code>Schema</code>)，有<code>world</code>、<code>auth</code>、<code>digest</code>、<code>ip</code>和<code>super</code>。</p>
+</li>
+<li><p><code>Zookeeper</code>的<code>ACL</code>包括三个部分:权限模式(<code>Scheme</code>)、授权对象(<code>ID</code>)和权限(<code>Permission</code>)，通常使用<code>schema:ip:permission</code>来标识一个有效的<code>ACL</code>信息。</p>
+<ol>
+<li><p><code>Schema</code></p>
+<ul>
+<li><code>IP</code>:指通过IP地址粒度进行权限控制。</li>
+<li><code>Digest</code>:最常用的权限控制模式。<code>username:password</code>形式，并进过<code>SHA-1</code>和<code>BASE64</code>加密处理。</li>
+<li><code>World</code>:最开放的权限控制模式。数据节点的访问权限对所有的用户开放。即所有的用户都可以在不进行任何权限校验的情况下操作<code>Zookeeper</code>上的数据。也可以看做是一种特殊的<code>Digest</code>模式，只有一个权限标识:<code>world:anyone</code>。</li>
+<li><code>Super</code>:一种特殊的<code>Digest</code>模式。在这种模式下，超级用户可以对任意<code>Zookeeper</code>上的数据节点进行任何操作。</li>
+</ul>
+</li>
+<li><p>授权对象:<code>ID</code></p>
+<p> |权限模式|授权对象|<br> |:—:|:—:|<br> |<code>IP</code>|通常是一个IP地址或者IP段。例如<code>192.168.0.110</code>或者<code>192.168.0.1/24</code>|<br> |<code>Digest</code>|自定义，通常是<code>username:BASE64(SHA-1(username:password))</code>|<br> |<code>World</code>|只有一个ID:”anyone”|<br> |<code>super</code>|与<code>Digest</code>一致|</p>
+</li>
+<li><p>权限:<code>Permission</code><br>权限指那些通过权限检查后可以被允许的操作。包括下面几种：</p>
+<ul>
+<li><code>CREATE(C)</code>:数据节点的创建权限，允许授权对象在该节点下创建子节点。</li>
+<li><code>DELETE(D)</code>:<strong><em>子节点</em></strong> 的删除权限。允许授权对象删除出该数据节点的子节点。</li>
+<li><code>READ(R)</code>:数据节点的读取权限。允许授权对象访问该数据节点并读取其数据内容或子节点列表等。</li>
+<li><code>WRITE(W)</code>:数据节点的更新权限。允许授权对象对该数据节点进行更新操作。</li>
+<li><code>ADMIN(A)</code>:数据节点的管理权限。允许授权对象对数据节点进行<code>ACL</code>相关的设置操作。</li>
+</ul>
+</li>
+</ol>
+</li>
+<li><p><code>Zookeeper</code>客户端由以下几个核心组件组成:</p>
+<ul>
+<li><code>Zookeeper</code>实例:客户端入口</li>
+<li><code>CLientWatchManager</code>:客户端<code>Watcher</code>管理器</li>
+<li><code>HostProvider</code>:客户端地址列表管理器</li>
+<li><code>ClientCnxn</code>:客户端核心线程，内部包含两个线程<ul>
+<li><code>SendThread</code>:<code>I/O</code>线程，负责客户端和服务端的网络通信。</li>
+<li><code>EventThread</code>:事件线程。负责对服务端事件进行处理。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p><code>Session</code></p>
+</blockquote>
+<ol>
+<li><p><code>Session</code>是<code>Zookeeper</code>中会话的实体，代表一个客户端会话，包含下面4个属性:</p>
+<ul>
+<li><code>sessionID</code>:会话ID，用来唯一标识一个会话。每次客户端创建新会话的时候都会分配一个全局唯一的<code>sessionID</code>。</li>
+<li><code>TimeOut</code>:会话超时时间。客户端在构造<code>Zookeeper</code>实例的时候需要制定会话超时时间。配置好之后服务器会<strong><em>根据自己的超时时间限制</em></strong>最终确定会话的超时时间。</li>
+<li><code>TickTime</code>:下次会话超时时间。<code>Zookeeper</code>采用”分桶策略”管理会话。</li>
+<li><code>isClosing</code>:用于标记一个会话是否已经被关闭。当服务端检测到一个会话已经超时失效的时候，会把对应会话的<code>isClosing</code>属性标识为”已关闭”。</li>
+</ul>
+</li>
+<li><p><code>SessionTracker</code>是<code>Zookeeper</code>服务端会话管理器，负责会话的创建、管理和清理工作。每个会话在<code>SessionTracker</code>内部保留了三份:</p>
+<ul>
+<li><code>sessionsById</code>:一个<code>HashMap&lt;Long,SessionImpl&gt;</code>类型的数据结构。根据<code>sessionID</code>来管理<code>Session</code>实体。</li>
+<li><code>sessionWithTimeout</code>:一个<code>ConcurrentHashMap&lt;Long,Integer&gt;</code>类型的数据结构，根据<code>sessionID</code>来管理会话的超时时间。该树结构和<code>Zookeeper</code>内存数据库相通，会被定期持久化到快找文件中去。</li>
+<li><code>sessionSets</code>:一个<code>HashMap&lt;Long,SessionSet&gt;</code>类型的数据结构。用于根据下次会话超时时间来归档会话，便于进行会话管理和超时检查。</li>
+</ul>
+</li>
+<li><p>会话管理<br> <code>Zookeeper</code>采用”分桶策略”进行会话管理。</p>
+<ul>
+<li><p>分桶策略</p>
+<p>  分桶策略是指：把类似的会话放在同一区块进行管理。分配的原则是按照每个会话的”下次超时时间”(<code>EipirationTime</code>)，”下次超时时间”也就是会话最近一次可能超时的时间点。<br>  <code>ExpirationTime</code>计算公式如下:<br>  <code>ExpirationTime_ = CurrentTime + SessionTimeout</code><br>  <code>ExpirationTime = (ExpirationTime_ / ExpirationInternal + 1) * ExpirationInternal</code></p>
+<ul>
+<li><code>CurrentTime</code>:对于新创建的<code>Session</code>表示创建时间，已有的<code>Session</code>表示当前会话被激活的时间。单位是毫秒。</li>
+<li><code>SessionTimeout</code>:会话超时时间。在实例化<code>Zookeeper</code>的时候设置的。单位是毫秒。</li>
+<li><code>ExpirationInternal</code>:<code>Leader</code>服务器定时检查会话超时时间间隔。默认值是<code>tickTime = 2000</code>。单位是毫秒。</li>
+</ul>
+</li>
+<li>会话激活</li>
+</ul>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/博客迁移/" rel="tag"># 博客迁移</a>
+          
+            <a href="/tags/Zookeeper/" rel="tag"># Zookeeper</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/29/Quartz分享/" rel="next" title="Quartz分享">
+                <i class="fa fa-chevron-left"></i> Quartz分享
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/29/IDEA搭建Zookeeper源码阅读环境/" rel="prev" title="IDEA搭建Zookeeper源码阅读环境">
+                IDEA搭建Zookeeper源码阅读环境 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

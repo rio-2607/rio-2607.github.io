@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="RPC,自己动手,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景github 这里是背景  设计与选型设计方案本次实现的RPC框架整体设计如下图所示(基本所有的RPC框架本质上都是这样的 😓)  从上面的图可以看到，RPC框架设计到3个模块：服务端、注册中心以及客户端。 服务端是服务提供方，在启动的时候把服务路径注册到注册中心上面去，客户端是服务消费方，在启动的时候订阅注册中心相应节点，拿到相应服务节点之后，客户端再直连服务端请求服务。 在运行的">
+<meta name="keywords" content="RPC,自己动手">
+<meta property="og:type" content="article">
+<meta property="og:title" content="自己动手写RPC框架">
+<meta property="og:url" content="http://yoursite.com/2019/04/02/自己动手写RPC/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="背景github 这里是背景  设计与选型设计方案本次实现的RPC框架整体设计如下图所示(基本所有的RPC框架本质上都是这样的 😓)  从上面的图可以看到，RPC框架设计到3个模块：服务端、注册中心以及客户端。 服务端是服务提供方，在启动的时候把服务路径注册到注册中心上面去，客户端是服务消费方，在启动的时候订阅注册中心相应节点，拿到相应服务节点之后，客户端再直连服务端请求服务。 在运行的">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://i.loli.net/2019/03/13/5c8891db013c7.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/13/5c887437c3249.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/13/5c88fda2a1bc6.png">
+<meta property="og:image" content="https://i.loli.net/2019/03/16/5c8c9350b9079.png">
+<meta property="og:image" content="https://i.loli.net/2019/04/01/5ca1ffd94fe1f.png">
+<meta property="og:image" content="https://i.loli.net/2019/04/02/5ca3225d226cd.png">
+<meta property="og:updated_time" content="2019-04-02T08:51:34.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="自己动手写RPC框架">
+<meta name="twitter:description" content="背景github 这里是背景  设计与选型设计方案本次实现的RPC框架整体设计如下图所示(基本所有的RPC框架本质上都是这样的 😓)  从上面的图可以看到，RPC框架设计到3个模块：服务端、注册中心以及客户端。 服务端是服务提供方，在启动的时候把服务路径注册到注册中心上面去，客户端是服务消费方，在启动的时候订阅注册中心相应节点，拿到相应服务节点之后，客户端再直连服务端请求服务。 在运行的">
+<meta name="twitter:image" content="https://i.loli.net/2019/03/13/5c8891db013c7.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/04/02/自己动手写RPC/">
+
+
+
+
+
+  <title>自己动手写RPC框架 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/04/02/自己动手写RPC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">自己动手写RPC框架</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-02T16:51:34+08:00">
+                2019-04-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/中间件/" itemprop="url" rel="index">
+                    <span itemprop="name">中间件</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/04/02/自己动手写RPC/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/04/02/自己动手写RPC/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p><a href="https://github.com/rio-2607/BeautyRPC" target="_blank" rel="noopener">github</a></p>
+<p>这里是背景</p>
+<p><img src="https://i.loli.net/2019/03/13/5c8891db013c7.png" alt="rpc call.png"></p>
+<h2 id="设计与选型"><a href="#设计与选型" class="headerlink" title="设计与选型"></a>设计与选型</h2><h3 id="设计方案"><a href="#设计方案" class="headerlink" title="设计方案"></a>设计方案</h3><p>本次实现的RPC框架整体设计如下图所示(基本所有的RPC框架本质上都是这样的 😓)</p>
+<p><img src="https://i.loli.net/2019/03/13/5c887437c3249.png" alt="RPC.png"></p>
+<p>从上面的图可以看到，RPC框架设计到3个模块：服务端、注册中心以及客户端。</p>
+<p>服务端是服务提供方，在启动的时候把服务路径注册到注册中心上面去，客户端是服务消费方，在启动的时候订阅注册中心相应节点，拿到相应服务节点之后，客户端再直连服务端请求服务。</p>
+<p>在运行的过程中，服务端节点可能会随时变化(宕机，发布重启)，此时，注册中心会把相应的节点变化通知客户端，以便客户端做进一步的处理。</p>
+<p>一个最基础的RPC框架涉及到4个动作：</p>
+<ol>
+<li>注册。</li>
+<li>订阅。</li>
+<li>通知。</li>
+<li>直连调用。</li>
+</ol>
+<p>其中前面3个动作：注册，订阅和通知都是跟注册中心交互的，涉及到注册中心的选型。</p>
+<p>第四个动作直连调用发生在客户端与服务端之间，这一过程又具体包含：</p>
+<ol>
+<li>数据序列化/反序列化。这涉及到序列化方案的选型。</li>
+<li>网络协议以及网络通信。这涉及自定义通信协议以及底层通信框架的选型。</li>
+</ol>
+<h3 id="技术选型"><a href="#技术选型" class="headerlink" title="技术选型"></a>技术选型</h3><h3 id="注册中心"><a href="#注册中心" class="headerlink" title="注册中心"></a>注册中心</h3><p>注册中心主要需要提供的能力有：</p>
+<ol>
+<li>服务注册。服务端能够把自身的服务地址注册上来。</li>
+<li>服务订阅。客户端能够订阅相应节点，获取相应数据。</li>
+<li>变更通知。在服务端与注册中心断开连接(主动:发布重启，被动:服务宕机或者网络故障)之后能够第一时间通知到客户端。</li>
+</ol>
+<p>要满足上面3个基础功能，业界通常使用Zookeeper来作为注册中心。</p>
+<ol>
+<li>服务注册。服务端往特定的路径写入数据(服务端口和IP等)。</li>
+<li>服务订阅。客户端读取特定路径下的数据(服务端IP和端口等)。</li>
+<li>变更订阅。客户端在特定的路径下面添加<code>Watcher</code>，当指定路径下的数据发生变更，Zookeeper会主动通知到客户端。</li>
+</ol>
+<h3 id="序列化-反序列化"><a href="#序列化-反序列化" class="headerlink" title="序列化/反序列化"></a>序列化/反序列化</h3><p>序列化方式对比</p>
+<ol>
+<li>JDK自带序列化方式。</li>
+<li>Google的Protobuf。</li>
+<li>Facebook的Thrift.</li>
+</ol>
+<p>性能对比。</p>
+<h3 id="网络协议-网络通信"><a href="#网络协议-网络通信" class="headerlink" title="网络协议/网络通信"></a>网络协议/网络通信</h3><ol>
+<li>Thrift</li>
+<li>Netty</li>
+</ol>
+<h3 id="选型"><a href="#选型" class="headerlink" title="选型"></a>选型</h3><p>本次实现的RPC框架技术选型结果为：<br>注册中心：Zookeeper<br>序列化/反序列化: Thrift<br>网络协议/网络通信: Thrift</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><h3 id="注册中心-1"><a href="#注册中心-1" class="headerlink" title="注册中心"></a>注册中心</h3><p>使用Zookeeper充当注册中心，就是要往特定的路径写数据。</p>
+<p>本次RPC框架的路径结构为:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/beautyrpc/servicename/[providers,consumers]</span><br></pre></td></tr></table></figure>
+<p>所有路径需要以<code>/beautyrpc</code>开头(生产环境中，可能存在多个业务使用同一套Zookeeper集群的情况，所以不同的业务需要挂载在不同的跟路径下面)</p>
+<p><img src="https://i.loli.net/2019/03/13/5c88fda2a1bc6.png" alt="registry.png"></p>
+<p>从上图可以看到，注册到注册中心上面去至少需要提供服务名称、服务端/客户端机器IP和端口以及注册类型(服务消费者还是服务提供者)。</p>
+<p>首先定义一个类<code>Service</code>表示注册的数据，定义如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Service</span> </span>&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">static</span> String PROVIDER_CATEGORY = <span class="string">"providers"</span>;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">static</span> String CONSUMER_CATEGORY = <span class="string">"consumers"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> String host; <span class="comment">// 主机地址</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> port; <span class="comment">// 服务端口</span></span><br><span class="line">    <span class="keyword">public</span> String name; <span class="comment">// 服务名称</span></span><br><span class="line">    <span class="keyword">public</span> String category; <span class="comment">// 服务类别：服务提供者还是服务消费者</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来定义注册中心<code>Registry</code>接口，表示注册中心应该提供的能力:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Registry</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">String <span class="title">getHosts</span><span class="params">()</span></span>; <span class="comment">//  获取注册中心地址</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isAvailable</span><span class="params">()</span></span>; <span class="comment">// 注册中心是否可用</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">destroy</span><span class="params">()</span></span>; <span class="comment">// 销毁注册中心</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">register</span><span class="params">(Service service)</span></span>; <span class="comment">// 注册服务</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">unregister</span><span class="params">(Service service)</span></span>; <span class="comment">// 取消注册</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">subscribe</span><span class="params">(String serviceName, NotifyListener listener)</span></span>; <span class="comment">// 订阅服务，获取指定服务名的服务器节点，并且当对应节点数据发生变化时回调传入的监听器</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">unsubscribe</span><span class="params">(String serviceName, NotifyListener listener)</span></span>; <span class="comment">// 取消订阅</span></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中<code>NotifyListener</code>接口的定义为</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">NotifyListener</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">notify</span><span class="params">(List&lt;Service&gt; services)</span></span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注册中心接口已经定义好了，接下来需要考虑注册中心可能会出现的问题已经对应的解决方法。</p>
+<p>需要考虑的问题有：</p>
+<ol>
+<li>作为注册中心的Zookeeper挂了怎么办？</li>
+<li><p>注册/取消注册、订阅/取消订阅的时候因为某些原因(网络原因/Zookeeper宕机等)失败了怎么办？</p>
+</li>
+<li><p>正常情况下，服务端启动服务注册到注册中心，客户端从注册中心获取服务节点，直接服务。如果服务节点有多个，则按照某种策略选择节点。<br>假设下面一个场景：A的服务以RPC的形式提供给B调用，A、B正在联调，A准备在服务的入口处加断点，但是断点一直没进来，后来发现是其他人也启动项目并注册到注册中心上面并对外提供服务了。请求打到其他人的服务上面去了(这是自己真实碰到过的事情)。对于这种场景应该怎么解？</p>
+</li>
+</ol>
+<p>对于问题1，这个问题无解，线上环境一旦Zookeeper挂了，应该会有很多服务受到影响的。对于这个问题，我们要做的就是Zookeeper集群要做到高可用，然后要做监控，第一时间发现问题。</p>
+<p>对于第二个问题，可以把每次注册/订阅失败的节点保存起来，然后后台运行一个定时任务去重试。</p>
+<p>对于第三个问题，有两种解法，一种是每次联调的时候配置独立的(自己安装的非共享的)Zookeeper服务。第二种方法是RPC框架支持静态注册器，即用户可以选择不选用Zookeeper集群而是采用直连本地配置好的服务地址。</p>
+<p>本次实现的RPC框架采用的是第二种方案。</p>
+<h4 id="AbstractRegistry"><a href="#AbstractRegistry" class="headerlink" title="AbstractRegistry"></a><code>AbstractRegistry</code></h4><p>无论是采用<code>Zookeeper</code>的注册中心，还是本地直连的注册中心，都需要保存已经注册了的服务以及订阅的监听器，所以首先定义一个抽象父类<code>AbstractRegistry</code>，该类默认实现了<code>Registry</code>接口。</p>
+<p>在<code>AbstractRegistry</code>类中定义三个变量分别用来保存已经注册的服务，已经订阅的监听器以及注册中心的地址:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">AbstractRegistry</span> <span class="keyword">implements</span> <span class="title">Registry</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">final</span> Logger logger = LoggerFactory.getLogger(getClass());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Set&lt;Service&gt; registered = <span class="keyword">new</span> ConcurrentHashSet&lt;&gt;(); <span class="comment">// 已经注册的服务</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ConcurrentMap&lt;String, Set&lt;NotifyListener&gt;&gt; subscribed = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;(); <span class="comment">// 已经订阅的监听器，key为订阅的路径，value为对应的监听器列表</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> String hosts; <span class="comment">// 注册中心的地址。Zookeeper地址/直连地址</span></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来是在<code>AbstractRegistry</code>类中实现默认的订阅/注册等操作。</p>
+<p>首先是注册/取消注册操作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">register</span><span class="params">(Service service)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (service == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"register service == null"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    logger.info(<span class="string">"Register: "</span> + service);</span><br><span class="line">    <span class="comment">// 添加到已注册服务集合中</span></span><br><span class="line">    registered.add(service);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">unregister</span><span class="params">(Service service)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (service == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"unregister service == null"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    logger.info(<span class="string">"Unregister: "</span> + service);</span><br><span class="line">    <span class="comment">// 从集合中移除</span></span><br><span class="line">    registered.remove(service);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>默认操作很简单，只是添加到已注册服务集合中/从已注册服务集合中移除。</p>
+<p>订阅与取消订阅也是一样的操作：添加到集合中/从集合中移除：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">subscribe</span><span class="params">(String service, NotifyListener listener)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (service == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"subscribe service == null"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (listener == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"subscribe listener == null"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    logger.info(<span class="string">"Subscribe: "</span> + service);</span><br><span class="line">    Set&lt;NotifyListener&gt; listeners = subscribed.get(service);</span><br><span class="line">    <span class="keyword">if</span> (listeners == <span class="keyword">null</span>) &#123;</span><br><span class="line">        subscribed.putIfAbsent(service, <span class="keyword">new</span> ConcurrentHashSet&lt;&gt;());</span><br><span class="line">        listeners = subscribed.get(service);</span><br><span class="line">    &#125;</span><br><span class="line">    listeners.add(listener);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">unsubscribe</span><span class="params">(String service, NotifyListener listener)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (service == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"unsubscribe service == null"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (listener == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"unsubscribe listener == null"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    logger.info(<span class="string">"Unsubscribe: "</span> + service);</span><br><span class="line">    Set&lt;NotifyListener&gt; listeners = subscribed.get(service);</span><br><span class="line">    <span class="keyword">if</span> (listeners != <span class="keyword">null</span>) &#123;</span><br><span class="line">        listeners.remove(listener);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于<code>destroy()</code>方法，则是依次遍历<code>registered</code>和<code>subscribed</code>对象，把其中的数据从容器中删除:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">destroy</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (logger.isInfoEnabled()) &#123;</span><br><span class="line">        logger.info(<span class="string">"Destroy registry"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    Set&lt;Service&gt; destroyRegistered = <span class="keyword">new</span> HashSet&lt;&gt;(getRegistered());</span><br><span class="line">    destroyRegistered.forEach(service -&gt; &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            unregister(service); <span class="comment">// 调用unregister()方法取消注册</span></span><br><span class="line">            <span class="keyword">if</span> (logger.isInfoEnabled()) &#123;</span><br><span class="line">                logger.info(<span class="string">"Destroy unregister service "</span> + service);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">            logger.warn(<span class="string">"Failed to unregister service "</span> + service + <span class="string">" to registry "</span> + getHosts()</span><br><span class="line">                    + <span class="string">" on destroy, cause: "</span> + t.getMessage(), t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">    Map&lt;String, Set&lt;NotifyListener&gt;&gt; destroySubscribed = <span class="keyword">new</span> HashMap&lt;&gt;(getSubscribed());</span><br><span class="line">    destroySubscribed.forEach((service,listeners) -&gt; &#123;</span><br><span class="line">        listeners.forEach(listener -&gt; &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                unsubscribe(service, listener);<span class="comment">// 调用unsubscribe()方法取消订阅</span></span><br><span class="line">                <span class="keyword">if</span> (logger.isInfoEnabled()) &#123;</span><br><span class="line">                    logger.info(<span class="string">"Destroy unsubscribe service "</span> + service);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable t) &#123;</span><br><span class="line">                logger.warn(<span class="string">"Failed to unsubscribe service "</span> + service + <span class="string">" to registry "</span> + getHosts()</span><br><span class="line">                        + <span class="string">" on destroy, cause: "</span> + t.getMessage(), t);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>getHosts()</code>实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">getHosts</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> hosts;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Registry</code>的继承类图如下所示:</p>
+<p><img src="https://i.loli.net/2019/03/16/5c8c9350b9079.png" alt="Registry.png"></p>
+<p>注册中心都继承自<code>AbstractRegistry</code>。</p>
+<p>先来实现<code>StaticRegistry</code>。</p>
+<h4 id="StaticRegistry"><a href="#StaticRegistry" class="headerlink" title="StaticRegistry"></a><code>StaticRegistry</code></h4><p>正常情况下，<code>StaticRegistry</code>只用于开发/测试环境，当客户端向<code>StaticRegistry</code>订阅服务时，<code>StaticRegistry</code>只是直接返回实现配置好的服务器配置，该配置是在构造注册器的时候传入的。</p>
+<p>首先在<code>StaticRegistry</code>类中定义<code>servers</code>变量保存配置好的服务器的地址：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">StaticRegistry</span> <span class="keyword">extends</span> <span class="title">AbstractRegistry</span> </span>&#123; </span><br><span class="line">	<span class="keyword">private</span> List&lt;Server&gt; servers;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Server</code>类表示服务器对象，定义如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Server</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String host;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> port;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">Server</span><span class="params">(String host, <span class="keyword">int</span> port)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.host = host;</span><br><span class="line">        <span class="keyword">this</span>.port = port;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">StaticRegistry</span><span class="params">(String hosts, <span class="keyword">int</span> heartbeatPeriod)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.hosts = hosts; <span class="comment">// 保存设置的配置</span></span><br><span class="line">    init();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>init()</code>方法解析传入的字符串形式表示的服务端地址。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    String addrs = getHosts();</span><br><span class="line">    <span class="keyword">if</span> (addrs == <span class="keyword">null</span> || <span class="string">""</span>.equals(addrs.trim())) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"static service address == null"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    parseServer(addrs);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"> <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">parseServer</span><span class="params">(String addr)</span> </span>&#123;</span><br><span class="line">    String[] srv = StringUtils.split(addr, <span class="string">','</span>);</span><br><span class="line">    servers = Arrays.stream(srv).map(server -&gt; &#123;</span><br><span class="line">        String[] info = StringUtils.split(server, <span class="string">':'</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> Server(info[<span class="number">0</span>], Integer.parseInt(info[<span class="number">1</span>]));</span><br><span class="line">    &#125;).collect(Collectors.toList());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>客户端通过<code>subscribe()</code>方法获取指定服务的服务器地址，并且订阅通知：当指定服务的服务器地址发生变化时会回调指定的<code>NotifyListener</code>。</p>
+<p>对于<code>StaticRegistry</code>，它的<code>subscribe()</code>方法实现如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">subscribe</span><span class="params">(<span class="keyword">final</span> String service, <span class="keyword">final</span> NotifyListener listener)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.subscribe(service, listener);</span><br><span class="line">    <span class="comment">// 把配置好的服务器转换成service对象，直接调用父类的notify()方法</span></span><br><span class="line">    List&lt;Service&gt; services = servers.stream()</span><br><span class="line">            .map(server -&gt; <span class="keyword">new</span> Service(server.getHost(), server.getPort(), service, Service.PROVIDER_CATEGORY))</span><br><span class="line">            .collect(Collectors.toList());</span><br><span class="line">    notify(service, listener, services);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>除了<code>subscribe()</code>方法为，<code>StaticRegistry</code>类的其他方法可以直接使用父类<code>AbstractRegistry</code>的对应方法。</p>
+<h4 id="FailbackRegistry"><a href="#FailbackRegistry" class="headerlink" title="FailbackRegistry"></a><code>FailbackRegistry</code></h4><p>前文提到了，在注册/取消注册，订阅/取消订阅/，通知的时候都有可能会出现故障导致失败，所以需要保存所有失败的记录，然后定时去重试。<code>FailbackRegistry</code>类就是实现这个功能的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">FailbackRegistry</span> <span class="keyword">extends</span> <span class="title">AbstractRegistry</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 定时任务执行器</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ScheduledExecutorService retryExecutor = Executors.newScheduledThreadPool(<span class="number">1</span>, <span class="keyword">new</span> NamedThreadFactory(</span><br><span class="line">            <span class="string">"ThriftRegistryFailedRetryTimer"</span>, <span class="keyword">true</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 失败重试定时器，定时检查是否有请求失败，如有，无限次重试</span></span><br><span class="line">    <span class="keyword">private</span> ScheduledFuture&lt;?&gt; retryFuture;</span><br><span class="line"></span><br><span class="line">	 <span class="comment">// 保存所有注册失败的Service</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Set&lt;Service&gt; failedRegistered = <span class="keyword">new</span> ConcurrentHashSet&lt;Service&gt;();</span><br><span class="line">	 <span class="comment">// 保存所有取消注册失败的Service</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Set&lt;Service&gt; failedUnregistered = <span class="keyword">new</span> ConcurrentHashSet&lt;Service&gt;();</span><br><span class="line">	 </span><br><span class="line">	 <span class="comment">// 保存所有订阅失败的监听器，key为订阅的服务名，value为对应的通知器</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ConcurrentMap&lt;String, Set&lt;NotifyListener&gt;&gt; failedSubscribed = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line">	 <span class="comment">// 保存所有取消订阅失败的</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ConcurrentMap&lt;String, Set&lt;NotifyListener&gt;&gt; failedUnsubscribed = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line">	</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ConcurrentMap&lt;String, Map&lt;NotifyListener, List&lt;Service&gt;&gt;&gt; failedNotified = <span class="keyword">new</span> ConcurrentHashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">int</span> retryPeriod = Constants.DEFAULT_RETRY_PERIOD;</span><br><span class="line">    <span class="keyword">protected</span> <span class="keyword">boolean</span> checkWhenStartup = Constants.DEFAULT_CHECK_WHEN_STARTUP;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先定义一些变量来保存失败的记录，然后定义一个线程池(单个线程)来对失败的记录做定时重试。</p>
+<p>首先是<code>init()</code>方法，该方法由其他地方调用，主要做初始化，开启任务调度，对于失败的记录定时去做重试动作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    logger.debug(<span class="string">"init failback register"</span>);</span><br><span class="line">    <span class="keyword">this</span>.retryFuture = retryExecutor.scheduleWithFixedDelay(() -&gt; &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            retry();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 防御性容错</span></span><br><span class="line">            logger.error(<span class="string">"Unexpected error occur at failed retry, cause: "</span> + t.getMessage(), t);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;, retryPeriod, retryPeriod, TimeUnit.MILLISECONDS);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>retry()</code>方法主要是对失败的记录做重试操作：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 重试失败的动作</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">retry</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    logger.debug(<span class="string">"registry retry check"</span>);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (!failedRegistered.isEmpty()) &#123;</span><br><span class="line">        Set&lt;Service&gt; failed = <span class="keyword">new</span> HashSet&lt;&gt;(failedRegistered);</span><br><span class="line">        <span class="keyword">if</span> (failed.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            logger.info(<span class="string">"Retry register "</span> + failed);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">for</span> (Service service : failed) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                    	 <span class="comment">// 对于注册失败的服务，重新进行注册</span></span><br><span class="line">                        doRegister(service);</span><br><span class="line">                        <span class="comment">// 注册成功之后从失败记录中删除</span></span><br><span class="line">                        failedRegistered.remove(service);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                        logger.warn(</span><br><span class="line">                                <span class="string">"Failed to retry register "</span> + failed + <span class="string">", waiting for again, cause: "</span></span><br><span class="line">                                        + t.getMessage(), t);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                logger.warn(<span class="string">"Failed to retry register "</span> + failed + <span class="string">", waiting for again, cause: "</span> + t.getMessage(),</span><br><span class="line">                        t);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (!failedUnregistered.isEmpty()) &#123;</span><br><span class="line">        Set&lt;Service&gt; failed = <span class="keyword">new</span> HashSet&lt;Service&gt;(failedUnregistered);</span><br><span class="line">        <span class="keyword">if</span> (failed.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            logger.info(<span class="string">"Retry unregister "</span> + failed);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">for</span> (Service service : failed) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        doUnregister(service);</span><br><span class="line">                        failedUnregistered.remove(service);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                        logger.warn(</span><br><span class="line">                                <span class="string">"Failed to retry unregister  "</span> + failed + <span class="string">", waiting for again, cause: "</span></span><br><span class="line">                                        + t.getMessage(), t);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                logger.warn(</span><br><span class="line">                        <span class="string">"Failed to retry unregister  "</span> + failed + <span class="string">", waiting for again, cause: "</span> + t.getMessage(),</span><br><span class="line">                        t);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (!failedSubscribed.isEmpty()) &#123;</span><br><span class="line">        Map&lt;String, Set&lt;NotifyListener&gt;&gt; failed = <span class="keyword">new</span> HashMap&lt;&gt;(failedSubscribed);</span><br><span class="line">        <span class="keyword">for</span> (Map.Entry&lt;String, Set&lt;NotifyListener&gt;&gt; entry : <span class="keyword">new</span> HashMap&lt;&gt;(failed).entrySet()) &#123;</span><br><span class="line">            <span class="keyword">if</span> (entry.getValue() == <span class="keyword">null</span> || entry.getValue().size() == <span class="number">0</span>) &#123;</span><br><span class="line">                failed.remove(entry.getKey());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (failed.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            logger.info(<span class="string">"Retry subscribe "</span> + failed);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">for</span> (Map.Entry&lt;String, Set&lt;NotifyListener&gt;&gt; entry : failed.entrySet()) &#123;</span><br><span class="line">                    String service = entry.getKey();</span><br><span class="line">                    Set&lt;NotifyListener&gt; listeners = entry.getValue();</span><br><span class="line">                    <span class="keyword">for</span> (NotifyListener listener : listeners) &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            doSubscribe(service, listener);</span><br><span class="line">                            listeners.remove(listener);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                            logger.warn(</span><br><span class="line">                                    <span class="string">"Failed to retry subscribe "</span> + failed + <span class="string">", waiting for again, cause: "</span></span><br><span class="line">                                            + t.getMessage(), t);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                logger.warn(</span><br><span class="line">                        <span class="string">"Failed to retry subscribe "</span> + failed + <span class="string">", waiting for again, cause: "</span> + t.getMessage(), t);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (!failedUnsubscribed.isEmpty()) &#123;</span><br><span class="line">        Map&lt;String, Set&lt;NotifyListener&gt;&gt; failed = <span class="keyword">new</span> HashMap&lt;&gt;(failedUnsubscribed);</span><br><span class="line">        <span class="keyword">for</span> (Map.Entry&lt;String, Set&lt;NotifyListener&gt;&gt; entry : <span class="keyword">new</span> HashMap&lt;&gt;(failed).entrySet()) &#123;</span><br><span class="line">            <span class="keyword">if</span> (entry.getValue() == <span class="keyword">null</span> || entry.getValue().size() == <span class="number">0</span>) &#123;</span><br><span class="line">                failed.remove(entry.getKey());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (failed.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            logger.info(<span class="string">"Retry unsubscribe "</span> + failed);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">for</span> (Map.Entry&lt;String, Set&lt;NotifyListener&gt;&gt; entry : failed.entrySet()) &#123;</span><br><span class="line">                    String service = entry.getKey();</span><br><span class="line">                    Set&lt;NotifyListener&gt; listeners = entry.getValue();</span><br><span class="line">                    <span class="keyword">for</span> (NotifyListener listener : listeners) &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            doUnsubscribe(service, listener);</span><br><span class="line">                            listeners.remove(listener);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                            logger.warn(<span class="string">"Failed to retry unsubscribe "</span> + failed + <span class="string">", waiting for again, cause: "</span></span><br><span class="line">                                    + t.getMessage(), t);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                logger.warn(</span><br><span class="line">                        <span class="string">"Failed to retry unsubscribe "</span> + failed + <span class="string">", waiting for again, cause: "</span> + t.getMessage(),</span><br><span class="line">                        t);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (!failedNotified.isEmpty()) &#123;</span><br><span class="line">        Map&lt;String, Map&lt;NotifyListener, List&lt;Service&gt;&gt;&gt; failed = <span class="keyword">new</span> HashMap&lt;&gt;(failedNotified);</span><br><span class="line">        <span class="keyword">for</span> (Map.Entry&lt;String, Map&lt;NotifyListener, List&lt;Service&gt;&gt;&gt; entry : <span class="keyword">new</span> HashMap&lt;&gt;(failed).entrySet()) &#123;</span><br><span class="line">            <span class="keyword">if</span> (entry.getValue() == <span class="keyword">null</span> || entry.getValue().size() == <span class="number">0</span>) &#123;</span><br><span class="line">                failed.remove(entry.getKey());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (failed.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            logger.info(<span class="string">"Retry notify "</span> + failed);</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">for</span> (Map&lt;NotifyListener, List&lt;Service&gt;&gt; values : failed.values()) &#123;</span><br><span class="line">                    <span class="keyword">for</span> (Map.Entry&lt;NotifyListener, List&lt;Service&gt;&gt; entry : values.entrySet()) &#123;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            NotifyListener listener = entry.getKey();</span><br><span class="line">                            List&lt;Service&gt; services = entry.getValue();</span><br><span class="line">                            listener.notify(services);</span><br><span class="line">                            values.remove(listener);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                            logger.warn(</span><br><span class="line">                                    <span class="string">"Failed to retry notify "</span> + failed + <span class="string">", waiting for again, cause: "</span></span><br><span class="line">                                            + t.getMessage(), t);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable t) &#123; <span class="comment">// 忽略所有异常，等待下次重试</span></span><br><span class="line">                logger.warn(<span class="string">"Failed to retry notify "</span> + failed + <span class="string">", waiting for again, cause: "</span> + t.getMessage(), t);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">register</span><span class="params">(Service service)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.register(service);</span><br><span class="line">    failedRegistered.remove(service);</span><br><span class="line">    failedUnregistered.remove(service);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 向服务器端发送注册请求</span></span><br><span class="line">        doRegister(service);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        Throwable t = e;</span><br><span class="line">        <span class="comment">// 如果开启了启动时检测，则直接抛出异常</span></span><br><span class="line">        <span class="keyword">boolean</span> check = isCheckWhenStartup();</span><br><span class="line">        <span class="keyword">if</span> (check) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Failed to register "</span> + service + <span class="string">" to registry cause: "</span></span><br><span class="line">                    + t.getMessage(), t);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            logger.error(<span class="string">"Failed to register "</span> + service + <span class="string">", waiting for retry, cause: "</span> + t.getMessage(), t);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 将失败的注册请求记录到失败列表，定时重试</span></span><br><span class="line">        failedRegistered.add(service);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于<code>register()</code>方法，调用<code>doRegister()</code>方法完成具体的注册操作，该方法由子类实现，这一过程中如果发生任何异常，则认为注册失败，将对应的<code>Service</code>对象保存到失败的记录中，以等待定时任务进行重试。</p>
+<p>对于其他的几个操作(取消注册/订阅/取消订阅)也是一样的道理，都是调用子类实现的方法完成具体的操作，如果失败则记录到对应的失败记录中，等待定时任务重试。</p>
+<p>子类需要实现的方法有:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">FailbackRegistry</span> <span class="keyword">extends</span> <span class="title">AbstractRegistry</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 完成实际的注册操作</span></span><br><span class="line">	<span class="function"><span class="keyword">protected</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">doRegister</span><span class="params">(Service service)</span></span>;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 完成实际的取消注册操作</span></span><br><span class="line">	<span class="function"><span class="keyword">protected</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">doUnregister</span><span class="params">(Service service)</span></span>;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 完成实际的订阅操作</span></span><br><span class="line">	<span class="function"><span class="keyword">protected</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">doSubscribe</span><span class="params">(String service, NotifyListener listener)</span></span>;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">// 完成实际的取消订阅操作</span></span><br><span class="line">	<span class="function"><span class="keyword">protected</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">doUnsubscribe</span><span class="params">(String service, NotifyListener listener)</span></span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于<code>notify()</code>操作，直接调用父类的<code>nofity()</code>即可:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doNotify</span><span class="params">(String service, NotifyListener listener, List&lt;Service&gt; services)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">super</span>.notify(service, listener, services);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="ZookeeperRegistry"><a href="#ZookeeperRegistry" class="headerlink" title="ZookeeperRegistry"></a><code>ZookeeperRegistry</code></h4><p><code>ZookeeperRegistry</code>继承自<code>FailbackRegistry</code>类，完成具体的操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doRegister</span><span class="params">(Service service)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        zkClient.create(toUrlPath(service), isEphemeral());</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RpcException(<span class="string">"Failed to register "</span> + service + <span class="string">" to zookeeper "</span> + getHosts() + <span class="string">", cause: "</span></span><br><span class="line">                + e.getMessage(), e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doUnregister</span><span class="params">(Service service)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        zkClient.delete(toUrlPath(service));</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RpcException(<span class="string">"Failed to unregister "</span> + service + <span class="string">" to zookeeper "</span> + getHosts() + <span class="string">", cause: "</span></span><br><span class="line">                + e.getMessage(), e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于注册操作，主要就是往特定的路径写入数据，取消注册即删掉对应路径的数据。</p>
+<h3 id="服务端"><a href="#服务端" class="headerlink" title="服务端"></a>服务端</h3><p><img src="https://i.loli.net/2019/04/01/5ca1ffd94fe1f.png" alt="ThriftServer.png"></p>
+<h3 id="客户端"><a href="#客户端" class="headerlink" title="客户端"></a>客户端</h3><p><img src="https://i.loli.net/2019/04/02/5ca3225d226cd.png" alt="CliemtProxy.png"></p>
+<h2 id="优化"><a href="#优化" class="headerlink" title="优化"></a>优化</h2><p>这里是优化</p>
+<h2 id="Demo"><a href="#Demo" class="headerlink" title="Demo"></a>Demo</h2><p>这里是使用</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/RPC/" rel="tag"># RPC</a>
+          
+            <a href="/tags/自己动手/" rel="tag"># 自己动手</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/01/自己动手写配置管理中间件/" rel="next" title="自己动手写配置管理中间件">
+                <i class="fa fa-chevron-left"></i> 自己动手写配置管理中间件
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#设计与选型"><span class="nav-number">2.</span> <span class="nav-text">设计与选型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#设计方案"><span class="nav-number">2.1.</span> <span class="nav-text">设计方案</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#技术选型"><span class="nav-number">2.2.</span> <span class="nav-text">技术选型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注册中心"><span class="nav-number">2.3.</span> <span class="nav-text">注册中心</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#序列化-反序列化"><span class="nav-number">2.4.</span> <span class="nav-text">序列化/反序列化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#网络协议-网络通信"><span class="nav-number">2.5.</span> <span class="nav-text">网络协议/网络通信</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#选型"><span class="nav-number">2.6.</span> <span class="nav-text">选型</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#实现"><span class="nav-number">3.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#注册中心-1"><span class="nav-number">3.1.</span> <span class="nav-text">注册中心</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#AbstractRegistry"><span class="nav-number">3.1.1.</span> <span class="nav-text">AbstractRegistry</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#StaticRegistry"><span class="nav-number">3.1.2.</span> <span class="nav-text">StaticRegistry</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FailbackRegistry"><span class="nav-number">3.1.3.</span> <span class="nav-text">FailbackRegistry</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ZookeeperRegistry"><span class="nav-number">3.1.4.</span> <span class="nav-text">ZookeeperRegistry</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#服务端"><span class="nav-number">3.2.</span> <span class="nav-text">服务端</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#客户端"><span class="nav-number">3.3.</span> <span class="nav-text">客户端</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#优化"><span class="nav-number">4.</span> <span class="nav-text">优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Demo"><span class="nav-number">5.</span> <span class="nav-text">Demo</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

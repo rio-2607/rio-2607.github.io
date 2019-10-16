@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Java,GC,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景先介绍下背景。 在滴滴，服务部署在弹性云上面。弹性云是一种动态可伸缩的服务器，底层是通过docker的方式创建的虚拟机而不是物理机。 本次发布的应用Maybach共五台机器，分为3批发布，第一批和第二批各一台机器，第三批3台机器。 现象描述 14:34分开始发布第一批机器，14:35第一批机器部署成功。 14:45发布第二批机器，14:46发布成功。 登录已经发布的两台线上机器查看，服务正">
+<meta name="keywords" content="Java,GC">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记一次线上问题排查">
+<meta property="og:url" content="http://yoursite.com/2019/03/10/记一次线上问题排查/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="背景先介绍下背景。 在滴滴，服务部署在弹性云上面。弹性云是一种动态可伸缩的服务器，底层是通过docker的方式创建的虚拟机而不是物理机。 本次发布的应用Maybach共五台机器，分为3批发布，第一批和第二批各一台机器，第三批3台机器。 现象描述 14:34分开始发布第一批机器，14:35第一批机器部署成功。 14:45发布第二批机器，14:46发布成功。 登录已经发布的两台线上机器查看，服务正">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c0256697425d.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c0256862fe6d.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c02569fa4317.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c0256a01ba9d.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c0256cd55af6.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c0256eb2df39.jpeg">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c0256e916fa0.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c0257331c683.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c025730e905b.png">
+<meta property="og:image" content="https://i.loli.net/2018/12/01/5c02577776a68.png">
+<meta property="og:updated_time" content="2019-03-10T11:58:38.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="记一次线上问题排查">
+<meta name="twitter:description" content="背景先介绍下背景。 在滴滴，服务部署在弹性云上面。弹性云是一种动态可伸缩的服务器，底层是通过docker的方式创建的虚拟机而不是物理机。 本次发布的应用Maybach共五台机器，分为3批发布，第一批和第二批各一台机器，第三批3台机器。 现象描述 14:34分开始发布第一批机器，14:35第一批机器部署成功。 14:45发布第二批机器，14:46发布成功。 登录已经发布的两台线上机器查看，服务正">
+<meta name="twitter:image" content="https://i.loli.net/2018/12/01/5c0256697425d.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/03/10/记一次线上问题排查/">
+
+
+
+
+
+  <title>记一次线上问题排查 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/10/记一次线上问题排查/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">记一次线上问题排查</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-10T19:58:38+08:00">
+                2019-03-10
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/经验教训/" itemprop="url" rel="index">
+                    <span itemprop="name">经验教训</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/10/记一次线上问题排查/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/03/10/记一次线上问题排查/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>先介绍下背景。</p>
+<p>在滴滴，服务部署在弹性云上面。弹性云是一种动态可伸缩的服务器，底层是通过docker的方式创建的虚拟机而不是物理机。</p>
+<p>本次发布的应用<code>Maybach</code>共五台机器，分为3批发布，第一批和第二批各一台机器，第三批3台机器。</p>
+<h3 id="现象描述"><a href="#现象描述" class="headerlink" title="现象描述"></a>现象描述</h3><ol>
+<li>14:34分开始发布第一批机器，14:35第一批机器部署成功。</li>
+<li>14:45发布第二批机器，14:46发布成功。</li>
+<li>登录已经发布的两台线上机器查看，服务正常运行(进程还在)，且能正常打印请求log(能正常接收服务)，调用方无明显异常，业务数据无明显异常，无业务监控报警。</li>
+<li>14:58发布最后一批机器。</li>
+<li>14:59第三台(最后一批第一台)机器发布成功。</li>
+<li>15:01第四台(最后一批第二台)机器发布成功。</li>
+<li>15:02最后一台机器发布成功。</li>
+<li>15:02加油订单支付成功率 BI一级报警。</li>
+<li>15:04SRM新导购、油站检索、门店列表、门店详情标红成功率下降延迟增高</li>
+<li>15:06调用方反馈刚发布的服务全部连接超时。</li>
+</ol>
+<p>这个时候刚发布的系统已经线上全挂了。接下来就是回滚了。</p>
+<p>回滚的时候又出现了问题，导致整个回滚过程花了半个小时，也就是说线上服务全挂半个小时，15:31终于回滚成功，造成了不少的资损，不过这就是另外一件事了。</p>
+<p>事后查看发布之后那段时间内的机器监控，以第一台机器为例:</p>
+<blockquote>
+<p>内存使用情况</p>
+</blockquote>
+<p><img src="https://i.loli.net/2018/12/01/5c0256697425d.png" alt="memused.png"></p>
+<blockquote>
+<p>rpc调用统计</p>
+</blockquote>
+<p><img src="https://i.loli.net/2018/12/01/5c0256862fe6d.png" alt="rpccounter.png"></p>
+<blockquote>
+<p>流出流量</p>
+</blockquote>
+<p><img src="https://i.loli.net/2018/12/01/5c02569fa4317.png" alt="netout.png"></p>
+<blockquote>
+<p>请求流量</p>
+</blockquote>
+<p><img src="https://i.loli.net/2018/12/01/5c0256a01ba9d.png" alt="netin.png"></p>
+<h3 id="排查分析"><a href="#排查分析" class="headerlink" title="排查分析"></a>排查分析</h3><p>既然这次上线之后引起了故障，肯定得看下代码的改动点，通过mr记录发现这次上线了如下的改动点:<br><img src="https://i.loli.net/2018/12/01/5c0256cd55af6.png" alt="diff.png"><br>初步估计跟修改jvm参数有关，既然如此的话，第一反应应该是去查看GC日志，但是由于maybach没有配置gc.log，且没有配置相应的jvm监控，没办法查看故障发生时候的gc情况，这个方法行不通，那就想办法复现吧。</p>
+<p>在预发环境部署有问题的代码，很容易就可以复现了。</p>
+<p>首先使用top命令查看机器的系统情况<br><img src="https://i.loli.net/2018/12/01/5c0256eb2df39.jpeg" alt="top_mask.jpeg"><br>可以看到我们的服务(pid=433)占用了大量的cpu，进一步查看是哪个线程在占用cpu，使用<code>top -H -p433</code>查看结果如下:<br><img src="https://i.loli.net/2018/12/01/5c0256e916fa0.png" alt="toph.png"><br>可以看到pid尾478的线程在占用cpu，转换成十六进制为1de,使用命令查看线程堆栈情况，找到nid=0x1de的线程</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line">&quot;VM Thread&quot; os_prio=0 tid=0x00007f95f825b800 nid=0x1de runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#0 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f801c800 nid=0x1b3 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#1 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f801e000 nid=0x1b4 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#2 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8020000 nid=0x1b5 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#3 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8022000 nid=0x1b6 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#4 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8023800 nid=0x1b7 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#5 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8025800 nid=0x1b8 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#6 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8027800 nid=0x1b9 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#7 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8029000 nid=0x1ba runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#8 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f802b000 nid=0x1bb runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#9 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f802c800 nid=0x1bc runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#10 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f802e800 nid=0x1bd runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#11 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8030800 nid=0x1be runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#12 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8032000 nid=0x1bf runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#13 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8034000 nid=0x1c0 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#14 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8036000 nid=0x1c1 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#15 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8037800 nid=0x1c2 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#16 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8039800 nid=0x1c3 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#17 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f803b000 nid=0x1c4 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#18 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f803d000 nid=0x1c5 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#19 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f803f000 nid=0x1c6 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#20 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8040800 nid=0x1c7 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#21 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8042800 nid=0x1c8 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#22 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8044800 nid=0x1c9 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#23 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8046000 nid=0x1ca runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#24 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8048000 nid=0x1cb runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#25 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f804a000 nid=0x1cc runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#26 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f804b800 nid=0x1cd runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#27 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f804d800 nid=0x1ce runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#28 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f804f000 nid=0x1cf runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#29 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8051000 nid=0x1d0 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#30 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8053000 nid=0x1d1 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#31 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8054800 nid=0x1d2 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#32 (Parallel GC Threads)&quot; os_prio=0 tid=0x00007f95f8056800 nid=0x1d3 runnable</span><br><span class="line"></span><br><span class="line">&quot;Concurrent Mark-Sweep GC Thread&quot; os_prio=0 tid=0x00007f95f81df800 nid=0x1dd runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#0 (Parallel CMS Threads)&quot; os_prio=0 tid=0x00007f95f81cd800 nid=0x1d4 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#1 (Parallel CMS Threads)&quot; os_prio=0 tid=0x00007f95f81cf800 nid=0x1d5 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#2 (Parallel CMS Threads)&quot; os_prio=0 tid=0x00007f95f81d1800 nid=0x1d6 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#3 (Parallel CMS Threads)&quot; os_prio=0 tid=0x00007f95f81d3000 nid=0x1d7 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#4 (Parallel CMS Threads)&quot; os_prio=0 tid=0x00007f95f81d5000 nid=0x1d8 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#5 (Parallel CMS Threads)&quot; os_prio=0 tid=0x00007f95f81d6800 nid=0x1d9 runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#6 (Parallel CMS Threads)&quot; os_prio=0 tid=0x00007f95f81d8800 nid=0x1da runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#7 (Parallel CMS Threads)&quot; os_prio=0 tid=0x00007f95f81da800 nid=0x1db runnable</span><br><span class="line"></span><br><span class="line">&quot;Gang worker#8 (Parallel CMS Threads)&quot; os_prio=0 tid=0x00007f95f81dc000 nid=0x1dc runnable</span><br><span class="line"></span><br><span class="line">&quot;VM Periodic Task Thread&quot; os_prio=0 tid=0x00007f95f82dd000 nid=0x1f5 waiting on condition</span><br><span class="line"></span><br><span class="line">JNI global references: 10200</span><br></pre></td></tr></table></figure>
+<p>可以看到，”VM Thread”就是该cpu消耗较高的线程，查看相关文档我们得知，VM Thread是JVM层面的一个线程，主要工作是对其他线程的创建，分配和对象的清理等工作的。从后面几个线程也可以看出，JVM正在进行大量的GC工作。这里的原因已经比较明显了，即大量的GC工作导致项目运行缓慢。<br>继续查看jvm的gc情况，如下图所示:<br><img src="https://i.loli.net/2018/12/01/5c0257331c683.png" alt="gcutil.png"><br>这里已经很明了了，可以清晰的看到，jvm一直在fgc。<br>从上面那张图也可以看到，发生fgc的时候，新生代，老年代实际上占用的内存并不多，反倒是Metaspace，总共内存是65536k,目前已经使用了64098k，且jvm设置了<code>-XX:MaxMetaspaceSize=64</code>,即Metaspace最大可使用内存空间为64m，这个时候已经使用了97%，如果继续增大，就会发生fgc。<br><img src="https://i.loli.net/2018/12/01/5c025730e905b.png" alt="normal.png"><br>上面这张图是线上正常的时候Metaspace使用的大小保持在76m左右，是大于64m的，所以每次来了请求之后，Metaspace就会超过64m，这个时候jvm就会忙于fgc，造成stw，以至于调用方超时。</p>
+<p>故障原因已清晰明了：由于本次上线设置了Metaspace最大能使用的大小为64m，Metaspace使用空间只要超过64m就会发生fgc，而这个应用Metaspace正常使用大小为76m左右，导致jvm一直忙于fgc造成stw现象而无法去处理请求，导致线上请求超时。</p>
+<p>现在需要解释两个问题:</p>
+<ol>
+<li>为什么在第三批机器发布前调用方没有异常报警？也没有业务异常报警？</li>
+<li>为什么第三批机器发布完成之后全线连接超时？</li>
+</ol>
+<p>先来看一张图，这张图展示了整个发布上线过程中的整体的流量变化情况</p>
+<p><img src="https://i.loli.net/2018/12/01/5c02577776a68.png" alt="all.png"></p>
+<p>可以看到，第一二批机器发布之后，打到这两台机器上面的流量大幅减少（而且发布的时候正好是业务低峰期，本身流量就不多），另外三台未发布的机器的流量整体大幅增长（相对之前的流量）。</p>
+<p>现在来解释第一个问题：为什么在第三批机器发布前调用方没有异常报警？也没有业务异常报警？</p>
+<p>从图中可以看到，前两批机器发布之后，大部分流量都流向了还未发布的三台机器，只有较少部分流量会流向已经发布的两台机器，这个时候这两台机器所有的请求都会超时，但是这对整体业务影响不大，所以并没有业务异常报警。而且调用方配置的报警策略是每秒有超过十个的异常才报警，这个时候流量很少，并没有达到这个报警阈值，所以调用方也没有收到接口异常报警。</p>
+<p>继续解释第二个问题： 为什么第三批机器发布完成之后全线连接超时？</p>
+<p>第三批机器全部发布完成之后，流向这三台机器的流量大幅降低，且这三台机器上的请求会全部超时（jvm一直处于stw状态）。大部分的流量都流向了第一台机器，本来这个时候第一台机器的所有请求都会超时，大幅流量打过来，全部超时。所以这个时候线上所有请求都会超时，导致全线挂掉。</p>
+<h3 id="其他-关于Metaspace"><a href="#其他-关于Metaspace" class="headerlink" title="其他:关于Metaspace"></a>其他:关于Metaspace</h3><p>Metaspace是Java8中引入的用来替代<code>PermGen</code>(永久带)的一块内存区域，其与永久带一个最明显的区别就是Metaspace使用的是本地内存而不是堆内存，因此，Metaspace的大小仅受限于机器本身的内存大小。</p>
+<p>下面几个JVM参数跟Metaspace有关:</p>
+<ul>
+<li>-XX:MetaspaceSize：默认20.8M左右，主要是控制Metaspace GC发生的初始阈值，也是最小阈值。</li>
+<li>-XX:MaxMetaspaceSize：最大空间，默认是没有限制的。</li>
+<li>-XX:MinMetaspaceFreeRatio：在GC之后，最小的Metaspace剩余空间容量的百分比，减少为分配空间所导致的垃圾收集。</li>
+<li>-XX:MaxMetaspaceFreeRatio：在GC之后，最大的Metaspace剩余空间容量的百分比，减少为释放空间所导致的垃圾收集。</li>
+</ul>
+<p>关于Metaspace的具体细节可以参考你假笨的<a href="http://lovestblog.cn/blog/2016/10/29/metaspace/" target="_blank" rel="noopener">JVM源码分析之Metaspace解密</a>。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Java/" rel="tag"># Java</a>
+          
+            <a href="/tags/GC/" rel="tag"># GC</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/10/深入学习Java8 Stream/" rel="prev" title="深入学习Java8 Stream">
+                深入学习Java8 Stream <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#现象描述"><span class="nav-number">2.</span> <span class="nav-text">现象描述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排查分析"><span class="nav-number">3.</span> <span class="nav-text">排查分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他-关于Metaspace"><span class="nav-number">4.</span> <span class="nav-text">其他:关于Metaspace</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

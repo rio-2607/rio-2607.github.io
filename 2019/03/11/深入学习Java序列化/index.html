@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="源码分析,博客迁移,Java,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言对于Java的序列化，一直只知道只需要实现Serializbale这个接口就可以了，具体内部实现一直不是很了解，正好这次在重复造RPC的轮子的时候涉及到序列化问题，就抽时间看了下 Java序列化的底层实现，这篇文章算是这次的学习小结吧。 第一部分:WhatJava序列化是指把Java对象保存为二进制字节码的过程，Java反序列化是指把二进制码重新转换成Java对象的过程。 那么为什么需要序列化">
+<meta name="keywords" content="源码分析,博客迁移,Java">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入学习Java序列化">
+<meta property="og:url" content="http://yoursite.com/2019/03/11/深入学习Java序列化/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="前言对于Java的序列化，一直只知道只需要实现Serializbale这个接口就可以了，具体内部实现一直不是很了解，正好这次在重复造RPC的轮子的时候涉及到序列化问题，就抽时间看了下 Java序列化的底层实现，这篇文章算是这次的学习小结吧。 第一部分:WhatJava序列化是指把Java对象保存为二进制字节码的过程，Java反序列化是指把二进制码重新转换成Java对象的过程。 那么为什么需要序列化">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://i.loli.net/2019/03/11/5c85f7f8be17d.png">
+<meta property="og:updated_time" content="2019-03-11T05:54:52.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="深入学习Java序列化">
+<meta name="twitter:description" content="前言对于Java的序列化，一直只知道只需要实现Serializbale这个接口就可以了，具体内部实现一直不是很了解，正好这次在重复造RPC的轮子的时候涉及到序列化问题，就抽时间看了下 Java序列化的底层实现，这篇文章算是这次的学习小结吧。 第一部分:WhatJava序列化是指把Java对象保存为二进制字节码的过程，Java反序列化是指把二进制码重新转换成Java对象的过程。 那么为什么需要序列化">
+<meta name="twitter:image" content="https://i.loli.net/2019/03/11/5c85f7f8be17d.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/03/11/深入学习Java序列化/">
+
+
+
+
+
+  <title>深入学习Java序列化 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/11/深入学习Java序列化/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">深入学习Java序列化</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-11T13:54:52+08:00">
+                2019-03-11
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index">
+                    <span itemprop="name">Java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/03/11/深入学习Java序列化/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/03/11/深入学习Java序列化/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>对于<code>Java</code>的序列化，一直只知道只需要实现<code>Serializbale</code>这个接口就可以了，具体内部实现一直不是很了解，正好这次在重复造<code>RPC</code>的轮子的时候涉及到序列化问题，就抽时间看了下 <code>Java</code>序列化的底层实现，这篇文章算是这次的学习小结吧。</p>
+<h4 id="第一部分-What"><a href="#第一部分-What" class="headerlink" title="第一部分:What"></a>第一部分:What</h4><p><code>Java</code>序列化是指把<code>Java</code>对象保存为二进制字节码的过程，<code>Java</code>反序列化是指把二进制码重新转换成<code>Java</code>对象的过程。</p>
+<p>那么为什么需要序列化呢？</p>
+<p>第一种情况是：一般情况下<code>Java</code>对象的声明周期都比<code>Java</code>虚拟机的要短，实际应用中我们希望在<code>JVM</code>停止运行之后能够持久化指定的对象，这时候就需要把对象进行序列化之后保存。</p>
+<p>第二种情况是：需要把<code>Java</code>对象通过网络进行传输的时候。因为数据只能够以二进制的形式在网络中进行传输，因此当把对象通过网络发送出去之前需要先序列化成二进制数据，在接收端读到二进制数据之后反序列化成<code>Java</code>对象。</p>
+<h4 id="第二部分-How"><a href="#第二部分-How" class="headerlink" title="第二部分:How"></a>第二部分:How</h4><p>本部分以序列化到文件为例讲解<code>Java</code>序列化的基本用法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.beautyboss.slogen;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.io.*;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Author : Slogen</span></span><br><span class="line"><span class="comment"> * AddTime : 17/4/30</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SerializableTest</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        FileOutputStream fos = <span class="keyword">new</span> FileOutputStream(<span class="string">"temp.out"</span>);</span><br><span class="line">        ObjectOutputStream oos = <span class="keyword">new</span> ObjectOutputStream(fos);</span><br><span class="line">        TestObject testObject = <span class="keyword">new</span> TestObject();</span><br><span class="line">        oos.writeObject(testObject);</span><br><span class="line">        oos.flush();</span><br><span class="line">        oos.close();</span><br><span class="line"></span><br><span class="line">        FileInputStream fis = <span class="keyword">new</span> FileInputStream(<span class="string">"temp.out"</span>);</span><br><span class="line">        ObjectInputStream ois = <span class="keyword">new</span> ObjectInputStream(fis);</span><br><span class="line">        TestObject deTest = (TestObject) ois.readObject();</span><br><span class="line">        System.out.println(deTest.testValue);</span><br><span class="line">        System.out.println(deTest.parentValue);</span><br><span class="line">        System.out.println(deTest.innerObject.innerValue);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Parent</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">4963266899668807475L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> parentValue = <span class="number">100</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">InnerObject</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = <span class="number">5704957411985783570L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> innerValue = <span class="number">200</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">TestObject</span> <span class="keyword">extends</span> <span class="title">Parent</span> <span class="keyword">implements</span> <span class="title">Serializable</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">long</span> serialVersionUID = -<span class="number">3186721026267206914L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span> testValue = <span class="number">300</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> InnerObject innerObject = <span class="keyword">new</span> InnerObject();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序执行完用<code>vim</code>打开<code>temp.out</code>文件，可以看到<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">0000000</span>: aced <span class="number">0005</span> <span class="number">7372</span> <span class="number">0020</span> <span class="number">636f</span> <span class="number">6</span>d2e <span class="number">6265</span> <span class="number">6175</span>  ....sr. com.beau</span><br><span class="line"><span class="number">0000010</span>: <span class="number">7479</span> <span class="number">626f</span> <span class="number">7373</span> <span class="number">2e73</span> <span class="number">6</span>c6f <span class="number">6765</span> <span class="number">6e2</span>e <span class="number">5465</span>  tyboss.slogen.Te</span><br><span class="line"><span class="number">0000020</span>: <span class="number">7374</span> <span class="number">4f</span>62 <span class="number">6</span>a65 <span class="number">6374</span> d3c6 <span class="number">7e1</span>c <span class="number">4f</span>13 <span class="number">2</span>afe  stObject..~.O.*.</span><br><span class="line"><span class="number">0000030</span>: <span class="number">0200</span> <span class="number">0249</span> <span class="number">0009</span> <span class="number">7465</span> <span class="number">7374</span> <span class="number">5661</span> <span class="number">6</span>c75 <span class="number">654</span>c  ...I..testValueL</span><br><span class="line">0000040: 000b 696e 6e65 724f 626a 6563 7474 0023  ..innerObjectt.#</span><br><span class="line"><span class="number">0000050</span>: <span class="number">4</span>c63 <span class="number">6f</span>6d <span class="number">2f</span>62 <span class="number">6561</span> <span class="number">7574</span> <span class="number">7962</span> <span class="number">6f</span>73 <span class="number">732f</span>  Lcom/beautyboss/</span><br><span class="line"><span class="number">0000060</span>: <span class="number">736</span>c <span class="number">6f</span>67 <span class="number">656</span>e <span class="number">2f</span>49 <span class="number">6e6</span>e <span class="number">6572</span> <span class="number">4f</span>62 <span class="number">6</span>a65  slogen/InnerObje</span><br><span class="line"><span class="number">0000070</span>: <span class="number">6374</span> <span class="number">3</span>b78 <span class="number">7200</span> <span class="number">1</span>c63 <span class="number">6f</span>6d <span class="number">2e62</span> <span class="number">6561</span> <span class="number">7574</span>  ct;xr..com.beaut</span><br><span class="line"><span class="number">0000080</span>: <span class="number">7962</span> <span class="number">6f</span>73 <span class="number">732</span>e <span class="number">736</span>c <span class="number">6f</span>67 <span class="number">656</span>e <span class="number">2e50</span> <span class="number">6172</span>  yboss.slogen.Par</span><br><span class="line"><span class="number">0000090</span>: <span class="number">656</span>e <span class="number">74</span>bb <span class="number">1</span>eef <span class="number">0</span>d1f c950 cd02 <span class="number">0001</span> <span class="number">4900</span>  ent......P....I.</span><br><span class="line"><span class="number">00000</span>a0: <span class="number">0</span>b70 <span class="number">6172</span> <span class="number">656</span>e <span class="number">7456</span> <span class="number">616</span>c <span class="number">7565</span> <span class="number">7870</span> <span class="number">0000</span>  .parentValuexp..</span><br><span class="line"><span class="number">00000</span>b0: <span class="number">0064</span> <span class="number">0000</span> <span class="number">012</span>c <span class="number">7372</span> <span class="number">0021</span> <span class="number">636f</span> <span class="number">6</span>d2e <span class="number">6265</span>  .d...,sr.!com.be</span><br><span class="line"><span class="number">00000</span>c0: <span class="number">6175</span> <span class="number">7479</span> <span class="number">626f</span> <span class="number">7373</span> <span class="number">2e73</span> <span class="number">6</span>c6f <span class="number">6765</span> <span class="number">6e2</span>e  autyboss.slogen.</span><br><span class="line"><span class="number">00000</span>d0: <span class="number">496</span>e <span class="number">6e65</span> <span class="number">724f</span> <span class="number">626</span>a <span class="number">6563</span> <span class="number">744f</span> <span class="number">2</span>c14 <span class="number">8</span>a40  InnerObjectO,..@</span><br><span class="line"><span class="number">00000e0</span>: <span class="number">24f</span>b <span class="number">1202</span> <span class="number">0001</span> <span class="number">4900</span> <span class="number">0</span>a69 <span class="number">6e6</span>e <span class="number">6572</span> <span class="number">5661</span>  $.....I..innerVa</span><br><span class="line"><span class="number">00000f</span>0: <span class="number">6</span>c75 <span class="number">6578</span> <span class="number">7000</span> <span class="number">0000</span> c8                   luexp....</span><br></pre></td></tr></table></figure></p>
+<h4 id="第三部分-Why"><a href="#第三部分-Why" class="headerlink" title="第三部分:Why"></a>第三部分:Why</h4><p>调用<code>ObjectOutputStream.writeObject()</code>和<code>ObjectInputStream.readObject()</code>之后究竟做了什么？<code>temp.out</code>文件中的二进制分别代表什么意思？</p>
+<p>别急，且听我娓娓道来。</p>
+<ol>
+<li><p><code>ObjectStreamClass</code>类</p>
+<p> 官方文档对这个类的介绍如下</p>
+<blockquote>
+<p>Serialization’s descriptor for classes.  It contains the name and serialVersionUID of the class.  The ObjectStreamClass for a specific class loaded in this Java VM can be found/created using the lookup method.</p>
+</blockquote>
+<p> 可以看到<code>ObjectStreamClass</code>这个是类的序列化描述符，这个类可以描述需要被序列化的类的元数据，包括被序列化的类的名字以及序列号。可以通过<code>lookup()</code>方法来查找/创建在这个<code>JVM</code>中加载的特定的<code>ObjectStreamClass</code>对象。</p>
+</li>
+<li><p>序列化:<code>writeObject()</code></p>
+<p> 在调用<code>wroteObject()</code>进行序列化之前会先调用<code>ObjectOutputStream</code>的构造函数生成一个<code>ObjectOutputStream</code>对象，构造函数如下:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ObjectOutputStream</span><span class="params">(OutputStream out)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    verifySubclass();</span><br><span class="line">    <span class="comment">// bout表示底层的字节数据容器</span></span><br><span class="line">    bout = <span class="keyword">new</span> BlockDataOutputStream(out);</span><br><span class="line">    handles = <span class="keyword">new</span> HandleTable(<span class="number">10</span>, (<span class="keyword">float</span>) <span class="number">3.00</span>);</span><br><span class="line">    subs = <span class="keyword">new</span> ReplaceTable(<span class="number">10</span>, (<span class="keyword">float</span>) <span class="number">3.00</span>);</span><br><span class="line">    enableOverride = <span class="keyword">false</span>;</span><br><span class="line">    writeStreamHeader(); <span class="comment">// 写入文件头</span></span><br><span class="line">    bout.setBlockDataMode(<span class="keyword">true</span>); <span class="comment">// flush数据</span></span><br><span class="line">    <span class="keyword">if</span> (extendedDebugInfo) &#123;</span><br><span class="line">        debugInfoStack = <span class="keyword">new</span> DebugTraceInfoStack();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        debugInfoStack = <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 构造函数中首先会把<code>bout</code>对绑定到底层的字节数据容器，接着会调用<code>writeStreamHeader()</code>方法，该方法实现如下:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">writeStreamHeader</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    bout.writeShort(STREAM_MAGIC);</span><br><span class="line">    bout.writeShort(STREAM_VERSION);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 在<code>writeStreamHeader()</code>方法中首先会往底层字节容器中写入表示序列化的<code>Magic Number</code>以及版本号，定义为</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Magic number that is written to the stream header.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">static</span> <span class="keyword">short</span> STREAM_MAGIC = (<span class="keyword">short</span>)<span class="number">0xaced</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Version number that is written to the stream header.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">static</span> <span class="keyword">short</span> STREAM_VERSION = <span class="number">5</span>;</span><br></pre></td></tr></table></figure>
+<p> 接下来会调用<code>writeObject()</code>方法进行序列化,实现如下:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">writeObject</span><span class="params">(Object obj)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (enableOverride) &#123;</span><br><span class="line">        writeObjectOverride(obj);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 调用writeObject0()方法序列化</span></span><br><span class="line">        writeObject0(obj, <span class="keyword">false</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">        <span class="keyword">if</span> (depth == <span class="number">0</span>) &#123;</span><br><span class="line">            writeFatalException(ex);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">throw</span> ex;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 正常情况下会调用<code>writeObject0()</code>进行序列化操作,该方法实现如下:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeObject0</span><span class="params">(Object obj, <span class="keyword">boolean</span> unshared)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 一些省略代码</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 一些省略代码</span></span><br><span class="line">        Object orig = obj;</span><br><span class="line">        <span class="comment">// 获取要序列化的对象的Class对象</span></span><br><span class="line">        Class cl = obj.getClass();</span><br><span class="line">        ObjectStreamClass desc;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">            Class repCl;</span><br><span class="line">            <span class="comment">// 创建描述cl的ObjectStreamClass对象</span></span><br><span class="line">            desc = ObjectStreamClass.lookup(cl, <span class="keyword">true</span>);</span><br><span class="line">            <span class="comment">// 其他省略代码</span></span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 一些省略代码</span></span><br><span class="line">        <span class="comment">// 根据实际的类型进行不同的写入操作</span></span><br><span class="line">        <span class="comment">// remaining cases</span></span><br><span class="line">        <span class="keyword">if</span> (obj <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">            writeString((String) obj, unshared);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cl.isArray()) &#123;</span><br><span class="line">            writeArray(obj, desc, unshared);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (obj <span class="keyword">instanceof</span> Enum) &#123;</span><br><span class="line">            writeEnum((Enum) obj, desc, unshared);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (obj <span class="keyword">instanceof</span> Serializable) &#123;</span><br><span class="line">            <span class="comment">// 被序列化对象实现了Serializable接口</span></span><br><span class="line">            writeOrdinaryObject(obj, desc, unshared);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (extendedDebugInfo) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> NotSerializableException(</span><br><span class="line">                    cl.getName() + <span class="string">"\n"</span> + debugInfoStack.toString());</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> NotSerializableException(cl.getName());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        depth--;</span><br><span class="line">        bout.setBlockDataMode(oldMode);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 从代码里面可以看到，程序会</p>
+<ol>
+<li>生成一个描述被序列化对象的类的类元信息的<code>ObjectStreamClass</code>对象。</li>
+<li><p>根据传入的需要序列化的对象的实际类型进行不同的序列化操作。从代码里面可以很明显的看到，<strong><em>对于<code>String</code>类型、数组类型和<code>Enum</code>可以直接进行序列化</em></strong>。如果被序列化对象实现了<code>Serializable</code>对象，则会调用<code>writeOrdinaryObject()</code>方法进行序列化。</p>
+<p>这里可以解释一个问题:<code>Serializbale</code>接口是个空的接口，并没有定义任何方法，为什么需要序列化的接口只要实现<code>Serializbale</code>接口就能够进行序列化。</p>
+<p>答案是:<strong><em><code>Serializable</code>接口这是一个标识，告诉程序所有实现了”我”的对象都需要进行序列化。</em></strong></p>
+<p>因此，序列化过程接下来会执行到<code>writeOrdinaryObject()</code>这个方法中，该方法实现如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeOrdinaryObject</span><span class="params">(Object obj,</span></span></span><br><span class="line"><span class="function"><span class="params">                                 ObjectStreamClass desc,</span></span></span><br><span class="line"><span class="function"><span class="params">                                 <span class="keyword">boolean</span> unshared)</span> <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (extendedDebugInfo) &#123;</span><br><span class="line">        debugInfoStack.push(</span><br><span class="line">            (depth == <span class="number">1</span> ? <span class="string">"root "</span> : <span class="string">""</span>) + <span class="string">"object (class \""</span> +</span><br><span class="line">            obj.getClass().getName() + <span class="string">"\", "</span> + obj.toString() + <span class="string">")"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        desc.checkSerialize();</span><br><span class="line"></span><br><span class="line">        bout.writeByte(TC_OBJECT); <span class="comment">// 写入Object标志位</span></span><br><span class="line">        writeClassDesc(desc, <span class="keyword">false</span>); <span class="comment">// 写入类元数据</span></span><br><span class="line">        handles.assign(unshared ? <span class="keyword">null</span> : obj);</span><br><span class="line">        <span class="keyword">if</span> (desc.isExternalizable() &amp;&amp; !desc.isProxy()) &#123;</span><br><span class="line">            writeExternalData((Externalizable) obj);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            writeSerialData(obj, desc); <span class="comment">// 写入被序列化的对象的实例数据</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (extendedDebugInfo) &#123;</span><br><span class="line">            debugInfoStack.pop();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这个方法中首先会往底层字节容器中写入<code>TC_OBJECT</code>，表示这是一个新的<code>Object</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * new Object.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">static</span> <span class="keyword">byte</span> TC_OBJECT =       (<span class="keyword">byte</span>)<span class="number">0x73</span>;</span><br></pre></td></tr></table></figure>
+<p>接下来会调用<code>writeClassDesc()</code>方法写入被序列化对象的类的类元数据，<code>writeClassDesc()</code>方法实现如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeClassDesc</span><span class="params">(ObjectStreamClass desc, <span class="keyword">boolean</span> unshared)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> handle;</span><br><span class="line">    <span class="keyword">if</span> (desc == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// 如果desc为null</span></span><br><span class="line">        writeNull();</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!unshared &amp;&amp; (handle = handles.lookup(desc)) != -<span class="number">1</span>) &#123;</span><br><span class="line">        writeHandle(handle);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (desc.isProxy()) &#123;</span><br><span class="line">        writeProxyDesc(desc, unshared);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        writeNonProxyDesc(desc, unshared);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这个方法中会先判断传入的<code>desc</code>是否为<code>null</code>，如果为<code>null</code>则调用<code>writeNull()</code>方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeNull</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="comment">// TC_NULL =         (byte)0x70;</span></span><br><span class="line">    <span class="comment">// 表示对一个Object引用的描述的结束</span></span><br><span class="line">    bout.writeByte(TC_NULL);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果不为<code>null</code>，则一般情况下接下来会调用<code>writeNonProxyDesc()</code>方法，该方法实现如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeNonProxyDesc</span><span class="params">(ObjectStreamClass desc, <span class="keyword">boolean</span> unshared)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// TC_CLASSDESC =    (byte)0x72;</span></span><br><span class="line">    <span class="comment">// 表示一个新的Class描述符</span></span><br><span class="line">    bout.writeByte(TC_CLASSDESC);</span><br><span class="line">    handles.assign(unshared ? <span class="keyword">null</span> : desc);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (protocol == PROTOCOL_VERSION_1) &#123;</span><br><span class="line">        <span class="comment">// do not invoke class descriptor write hook with old protocol</span></span><br><span class="line">        desc.writeNonProxy(<span class="keyword">this</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        writeClassDescriptor(desc);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    Class cl = desc.forClass();</span><br><span class="line">    bout.setBlockDataMode(<span class="keyword">true</span>);</span><br><span class="line">    <span class="keyword">if</span> (cl != <span class="keyword">null</span> &amp;&amp; isCustomSubclass()) &#123;</span><br><span class="line">        ReflectUtil.checkPackageAccess(cl);</span><br><span class="line">    &#125;</span><br><span class="line">    annotateClass(cl);</span><br><span class="line">    bout.setBlockDataMode(<span class="keyword">false</span>);</span><br><span class="line">    bout.writeByte(TC_ENDBLOCKDATA);</span><br><span class="line"></span><br><span class="line">    writeClassDesc(desc.getSuperDesc(), <span class="keyword">false</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这个方法中首先会写入一个字节的<code>TC_CLASSDESC</code>，这个字节表示接下来的数据是一个新的<code>Class</code>描述符，接着会调用<code>writeNonProxy()</code>方法写入实际的类元信息，<code>writeNonProxy()</code>实现如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writeNonProxy</span><span class="params">(ObjectOutputStream out)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    out.writeUTF(name); <span class="comment">// 写入类的名字</span></span><br><span class="line">    out.writeLong(getSerialVersionUID()); <span class="comment">// 写入类的序列号</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">byte</span> flags = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 获取类的标识</span></span><br><span class="line">    <span class="keyword">if</span> (externalizable) &#123;</span><br><span class="line">        flags |= ObjectStreamConstants.SC_EXTERNALIZABLE;</span><br><span class="line">        <span class="keyword">int</span> protocol = out.getProtocolVersion();</span><br><span class="line">        <span class="keyword">if</span> (protocol != ObjectStreamConstants.PROTOCOL_VERSION_1) &#123;</span><br><span class="line">            flags |= ObjectStreamConstants.SC_BLOCK_DATA;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (serializable) &#123;</span><br><span class="line">        flags |= ObjectStreamConstants.SC_SERIALIZABLE;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (hasWriteObjectData) &#123;</span><br><span class="line">        flags |= ObjectStreamConstants.SC_WRITE_METHOD;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (isEnum) &#123;</span><br><span class="line">        flags |= ObjectStreamConstants.SC_ENUM;</span><br><span class="line">    &#125;</span><br><span class="line">    out.writeByte(flags); <span class="comment">// 写入类的flag</span></span><br><span class="line"></span><br><span class="line">    out.writeShort(fields.length); <span class="comment">// 写入对象的字段的个数</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; fields.length; i++) &#123;</span><br><span class="line">        ObjectStreamField f = fields[i];</span><br><span class="line">        out.writeByte(f.getTypeCode());</span><br><span class="line">        out.writeUTF(f.getName());</span><br><span class="line">        <span class="keyword">if</span> (!f.isPrimitive()) &#123;</span><br><span class="line">            <span class="comment">// 如果不是原始类型，即是对象或者Interface</span></span><br><span class="line">            <span class="comment">// 则会写入表示对象或者类的类型字符串</span></span><br><span class="line">            out.writeTypeString(f.getTypeString());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>writeNonProxy()</code>方法中会按照以下几个过程来写入数据:</p>
+</li>
+<li><p>调用<code>writeUTF()</code>方法写入对象所属类的名字，对于本例中<code>name = com.beautyboss.slogen.TestObject</code>.对于<code>writeUTF()</code>这个方法，在写入实际的数据之前会先写入<code>name</code>的字节数，代码如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">writeUTF</span><span class="params">(String s, <span class="keyword">long</span> utflen)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (utflen &gt; <span class="number">0xFFFFL</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> UTFDataFormatException();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 写入两个字节的s的长度</span></span><br><span class="line">        writeShort((<span class="keyword">int</span>) utflen);</span><br><span class="line">        <span class="keyword">if</span> (utflen == (<span class="keyword">long</span>) s.length()) &#123;</span><br><span class="line">            writeBytes(s);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            writeUTFBody(s);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>接下来会调用<code>writeLong()</code>方法写入类的序列号<code>UID</code>,<code>UID</code>是通过<code>getSerialVersionUID()</code>方法来获取。</p>
+</li>
+<li><p>接着会判断被序列化的对象所属类的<code>flag</code>，并写入底层字节容器中(占用两个字节)。类的<code>flag</code>分为以下几类:</p>
+<ol>
+<li><code>final static byte SC_EXTERNALIZABLE = 0x04;</code>表示该类为<code>Externalizable</code>类，即实现了<code>Externalizable</code>接口。</li>
+<li><code>final static byte SC_SERIALIZABLE = 0x02;</code>表示该类实现了<code>Serializable</code>接口。</li>
+<li><code>final static byte SC_WRITE_METHOD = 0x01;</code>表示该类实现了<code>Serializable</code>接口且自定义了<code>writeObject()</code>方法。</li>
+<li><p><code>final static byte SC_ENUM = 0x10;</code>表示该类是个<code>Enum</code>类型。</p>
+<p>对于本例中<code>flag = 0x02</code>表示只是<code>Serializable</code>类型。</p>
+</li>
+</ol>
+</li>
+<li><p>第四步会依次写入被序列化对象的字段的元数据。</p>
+<ol>
+<li>首先会写入被序列化对象的字段的个数，占用两个字节。本例中为2，因为<code>TestObject</code>类中只有两个字段，一个是<code>int</code>类型的<code>testValue</code>，一个是<code>InnerObject</code>类型的<code>innerValue</code>。</li>
+<li><p>依次写入每个字段的元数据。每个单独的字段由<code>ObjectStreamField</code>类来表示。</p>
+<ol>
+<li><p>写入字段的类型码，占一个字节。 类型码的映射关系如下:</p>
+<p> TypeCode| Java Type<br> —|—<br> <code>B</code> | <code>byte</code><br> <code>C</code> | <code>char</code><br> <code>D</code> | <code>double</code><br> <code>F</code> | <code>float</code><br> <code>I</code> | <code>int</code><br> <code>J</code> | <code>long</code><br> <code>L</code> | <code>class or interface</code><br> <code>S</code> | <code>short</code><br> <code>Z</code> | <code>boolean</code><br> <code>[</code> | <code>array</code></p>
+</li>
+<li>调用<code>writeUTF()</code>方法写入每个字段的名字。注意，<code>writeUTF()</code>方法会先写入名字占用的字节数。</li>
+<li><p>如果被写入的字段不是基本类型，则会接着调用<code>writeTypeString()</code>方法写入代表对象或者类的类型字符串，该方法需要一个参数，表示对应的类或者接口的字符串，最终调用的还是<code>writeString()</code>方法，实现如下</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeString</span><span class="params">(String str, <span class="keyword">boolean</span> unshared)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    handles.assign(unshared ? <span class="keyword">null</span> : str);</span><br><span class="line">    <span class="keyword">long</span> utflen = bout.getUTFLength(str);</span><br><span class="line">    <span class="keyword">if</span> (utflen &lt;= <span class="number">0xFFFF</span>) &#123;</span><br><span class="line">        <span class="comment">// final static byte TC_STRING = (byte)0x74;</span></span><br><span class="line">        <span class="comment">// 表示接下来的字节表示一个字符串</span></span><br><span class="line">        bout.writeByte(TC_STRING);</span><br><span class="line">        bout.writeUTF(str, utflen);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        bout.writeByte(TC_LONGSTRING);</span><br><span class="line">        bout.writeLongUTF(str, utflen);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 在这个方法中会先写入一个标志位<code>TC_STRING</code>表示接下来的数据是一个字符串，接着会调用<code>writeUTF()</code>写入字符串。</p>
+<p>执行完上面的过程之后，程序流程重新回到<code>writeNonProxyDesc()</code>方法中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeNonProxyDesc</span><span class="params">(ObjectStreamClass desc, <span class="keyword">boolean</span> unshared)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 其他省略代码</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// TC_ENDBLOCKDATA = (byte)0x78;</span></span><br><span class="line">    <span class="comment">// 表示对一个object的描述块的结束</span></span><br><span class="line">    bout.writeByte(TC_ENDBLOCKDATA);</span><br><span class="line"></span><br><span class="line">    writeClassDesc(desc.getSuperDesc(), <span class="keyword">false</span>); <span class="comment">// 尾递归调用，写入父类的类元数据</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来会写入一个字节的标志位<code>TC_ENDBLOCKDATA</code>表示对一个<code>object</code>的描述块的结束。</p>
+<p>然后会调用<code>writeClassDesc()</code>方法，传入父类的<code>ObjectStreamClass</code>对象，写入父类的类元数据。</p>
+<p>需要注意的是<code>writeClassDesc()</code>这个方法是个递归调用，调用结束返回的条件是没有了父类，即传入的<code>ObjectStreamClass</code>对象为<code>null</code>，这个时候会写入一个字节的标识位<code>TC_NULL</code>.</p>
+<p>在递归调用完成写入类的类元数据之后，程序执行流程回到<code>wriyeOrdinaryObject()</code>方法中，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeOrdinaryObject</span><span class="params">(Object obj,</span></span></span><br><span class="line"><span class="function"><span class="params">                                 ObjectStreamClass desc,</span></span></span><br><span class="line"><span class="function"><span class="params">                                 <span class="keyword">boolean</span> unshared)</span> <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 其他省略代码</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        desc.checkSerialize();</span><br><span class="line">        <span class="comment">// 其他省略代码</span></span><br><span class="line">        <span class="keyword">if</span> (desc.isExternalizable() &amp;&amp; !desc.isProxy()) &#123;</span><br><span class="line">            writeExternalData((Externalizable) obj);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            writeSerialData(obj, desc); <span class="comment">// 写入被序列化的对象的实例数据</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (extendedDebugInfo) &#123;</span><br><span class="line">            debugInfoStack.pop();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面的分析中我们可以知道，当写入类的元数据的时候，<strong><em>是先写子类的类元数据，然后递归调用的写入父类的类元数据</em></strong>。</p>
+<p>接下来会调用<code>writeSerialData()</code>方法写入被序列化的对象的字段的数据，方法实现如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeSerialData</span><span class="params">(Object obj, ObjectStreamClass desc)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 获取表示被序列化对象的数据的布局的ClassDataSlot数组，父类在前</span></span><br><span class="line">    ObjectStreamClass.ClassDataSlot[] slots = desc.getClassDataLayout();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; slots.length; i++) &#123;</span><br><span class="line">        ObjectStreamClass slotDesc = slots[i].desc;</span><br><span class="line">        <span class="keyword">if</span> (slotDesc.hasWriteObjectMethod()) &#123;</span><br><span class="line">           <span class="comment">// 如果被序列化对象自己实现了writeObject()方法，则执行if块里的代码</span></span><br><span class="line"></span><br><span class="line">           <span class="comment">// 一些省略代码</span></span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 调用默认的方法写入实例数据</span></span><br><span class="line">            defaultWriteFields(obj, slotDesc);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在这个方法中首先会调用<code>getClassDataSlot()</code>方法获取被序列化对象的数据的布局，关于这个方法官方文档中说明如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Returns array of ClassDataSlot instances representing the data layout</span></span><br><span class="line"><span class="comment"> * (including superclass data) for serialized objects described by this</span></span><br><span class="line"><span class="comment"> * class descriptor.  ClassDataSlots are ordered by inheritance with those</span></span><br><span class="line"><span class="comment"> * containing "higher" superclasses appearing first.  The final</span></span><br><span class="line"><span class="comment"> * ClassDataSlot contains a reference to this descriptor.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"> ClassDataSlot[] getClassDataLayout() <span class="keyword">throws</span> InvalidClassException;</span><br></pre></td></tr></table></figure>
+<p>需要注意的是这个方法会把从父类继承的数据一并返回，并且表示从父类继承的数据的<code>ClassDataSlot</code>对象在数组的最前面。</p>
+<p>对于没有自定义<code>writeObject()</code>方法的对象来说，接下来会调用<code>defaultWriteFields()</code>方法写入数据，该方法实现如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">defaultWriteFields</span><span class="params">(Object obj, ObjectStreamClass desc)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 其他一些省略代码</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> primDataSize = desc.getPrimDataSize();</span><br><span class="line">    <span class="keyword">if</span> (primVals == <span class="keyword">null</span> || primVals.length &lt; primDataSize) &#123;</span><br><span class="line">        primVals = <span class="keyword">new</span> <span class="keyword">byte</span>[primDataSize];</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 获取对应类中的基本数据类型的数据并保存在primVals字节数组中</span></span><br><span class="line">    desc.getPrimFieldValues(obj, primVals);</span><br><span class="line">    <span class="comment">// 把基本数据类型的数据写入底层字节容器中</span></span><br><span class="line">    bout.write(primVals, <span class="number">0</span>, primDataSize, <span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 获取对应类的所有的字段对象</span></span><br><span class="line">    ObjectStreamField[] fields = desc.getFields(<span class="keyword">false</span>);</span><br><span class="line">    Object[] objVals = <span class="keyword">new</span> Object[desc.getNumObjFields()];</span><br><span class="line">    <span class="keyword">int</span> numPrimFields = fields.length - objVals.length;</span><br><span class="line">    <span class="comment">// 把对应类的Object类型(非原始类型)的对象保存到objVals数组中</span></span><br><span class="line">    desc.getObjFieldValues(obj, objVals);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; objVals.length; i++) &#123;</span><br><span class="line">        <span class="comment">// 一些省略的代码</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">// 对所有Object类型的字段递归调用writeObject0()方法写入对应的数据</span></span><br><span class="line">            writeObject0(objVals[i],</span><br><span class="line">                         fields[numPrimFields + i].isUnshared());</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (extendedDebugInfo) &#123;</span><br><span class="line">                debugInfoStack.pop();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到，在这个方法中会做下面几件事情:</p>
+</li>
+<li>获取对应类的基本类型的字段的数据，并写入到底层的字节容器中。</li>
+<li><p>获取对应类的<code>Object</code>类型(非基本类型)的字段成员，递归调用<code>writeObject0()</code>方法写入相应的数据。</p>
+<p>从上面对写入数据的分析可以知道，写入数据是是按照<strong><em>先父类后子类</em></strong>的顺序来写的。</p>
+</li>
+</ol>
+<p>至此，<code>Java</code>序列化过程分析完毕，总结一下，在本例中序列化过程如下:</p>
+<p><img src="https://i.loli.net/2019/03/11/5c85f7f8be17d.png" alt="Java序列化.png"></p>
+<p>现在可以来分析下第二步中写入的<code>temp.out</code>文件的内容了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">aced 	 	Stream Magic</span><br><span class="line"><span class="number">0005</span>	 	序列化版本号</span><br><span class="line"><span class="number">73</span>			标志位:TC_OBJECT,表示接下来是个新的Object</span><br><span class="line"><span class="number">72</span> 			标志位:TC_CLASSDESC,表示接下来是对Class的描述</span><br><span class="line"><span class="number">0020</span>		类名的长度为<span class="number">32</span></span><br><span class="line"><span class="number">636f</span> <span class="number">6</span>d2e <span class="number">6265</span> <span class="number">6175</span> <span class="number">7479</span> <span class="number">626f</span> <span class="number">7373</span> <span class="number">2e73</span> com.beautyboss.s</span><br><span class="line"><span class="number">6</span>c6f <span class="number">6765</span> <span class="number">6e2</span>e <span class="number">5465</span> <span class="number">7374</span> <span class="number">4f</span>62 <span class="number">6</span>a65 <span class="number">6374</span> logen.TestObject</span><br><span class="line">d3c6 <span class="number">7e1</span>c <span class="number">4f</span>13 <span class="number">2</span>afe 序列号</span><br><span class="line"><span class="number">02</span>			flag，可序列化</span><br><span class="line"><span class="number">00</span> <span class="number">02</span>		TestObject的字段的个数，为<span class="number">2</span></span><br><span class="line"><span class="number">49</span> 			TypeCode，I，表示<span class="keyword">int</span>类型</span><br><span class="line"><span class="number">0009</span> 		字段名长度，占<span class="number">9</span>个字节</span><br><span class="line"><span class="number">7465</span> <span class="number">7374</span> <span class="number">5661</span> <span class="number">6</span>c75 <span class="number">65</span>		字段名:testValue</span><br><span class="line"><span class="number">4</span>c  		TypeCode:L,表示是个Class或者Interface</span><br><span class="line"><span class="number">000</span>b		字段名长度，占<span class="number">11</span>个字节</span><br><span class="line"><span class="number">696</span>e <span class="number">6e65</span> <span class="number">724f</span> <span class="number">626</span>a <span class="number">6563</span> <span class="number">74</span> 字段名:innerObject</span><br><span class="line"><span class="number">74</span> 			标志位：TC_STRING，表示后面的数据是个字符串</span><br><span class="line"><span class="number">0023</span>   		类名长度，占<span class="number">35</span>个字节</span><br><span class="line"><span class="number">4</span>c63 <span class="number">6f</span>6d <span class="number">2f</span>62 <span class="number">6561</span> <span class="number">7574</span> <span class="number">7962</span> <span class="number">6f</span>73 <span class="number">732f</span>  Lcom/beautyboss/</span><br><span class="line"><span class="number">736</span>c <span class="number">6f</span>67 <span class="number">656</span>e <span class="number">2f</span>49 <span class="number">6e6</span>e <span class="number">6572</span> <span class="number">4f</span>62 <span class="number">6</span>a65  slogen/InnerObje</span><br><span class="line"><span class="number">6374</span> <span class="number">3</span>b									 ct;</span><br><span class="line"><span class="number">78</span> 			标志位:TC_ENDBLOCKDATA,对象的数据块描述的结束</span><br></pre></td></tr></table></figure>
+<p>接下来是对父类，也就是Parent类的描述</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">72</span>		标志位:TC_CLASSDESC,表示接下来是对Class的描述</span><br><span class="line"><span class="number">00</span> <span class="number">1</span>c		类名的长度，为<span class="number">28</span></span><br><span class="line"><span class="number">636f</span> <span class="number">6</span>d2e <span class="number">6265</span> <span class="number">6175</span> <span class="number">7479</span> <span class="number">626f</span>  	com.beautybo</span><br><span class="line"><span class="number">7373</span> <span class="number">2e73</span> <span class="number">6</span>c6f <span class="number">6765</span> <span class="number">6e2</span>e <span class="number">5061</span>   ss.slogen.Pa</span><br><span class="line"><span class="number">7265</span> <span class="number">6e74</span>			rent</span><br><span class="line">bb <span class="number">1</span>eef <span class="number">0</span>d1f c950 cd 		序列号</span><br><span class="line"><span class="number">02</span> 		flag,表示可序列化</span><br><span class="line"><span class="number">0001</span> 		字段个数，<span class="number">1</span>个</span><br><span class="line"><span class="number">49</span>		TypeCode,I,表示<span class="keyword">int</span>类型</span><br><span class="line"><span class="number">000</span>b  		字段名长度，占<span class="number">11</span>个字节</span><br><span class="line"><span class="number">7061</span> <span class="number">7265</span> <span class="number">6e74</span> <span class="number">5661</span> <span class="number">6</span>c75 <span class="number">65</span> 	字段名：parentValue</span><br><span class="line"><span class="number">78</span>		标志位:TC_ENDBLOCKDATA,对象的数据块描述的结束</span><br><span class="line"><span class="number">70</span> 		标志位:TC_NULL,Null object reference.</span><br></pre></td></tr></table></figure>
+<p>接下来开始写入数据,从父类Parent开始</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">0000 0064 parentValue的值:100</span><br><span class="line">0000 012c testValue的值:300</span><br></pre></td></tr></table></figure>
+<p>接下来是写入InnerObject的类元信息</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">73</span>	标志位,TC_OBJECT:表示接下来是个新的Object</span><br><span class="line"><span class="number">72</span> 	标志位,TC_CLASSDESC：表示接下来是对Class的描述</span><br><span class="line"><span class="number">0021</span> 	类名的长度，为<span class="number">33</span></span><br><span class="line"><span class="number">636f</span> <span class="number">6</span>d2e <span class="number">6265</span> <span class="number">6175</span> <span class="number">7479</span> <span class="number">626f</span> <span class="number">7373</span>  com.beautyboss</span><br><span class="line"><span class="number">2e73</span> <span class="number">6</span>c6f <span class="number">6765</span> <span class="number">6e2</span>e <span class="number">496</span>e <span class="number">6e65</span> <span class="number">724f</span> .slogen.InnerO</span><br><span class="line"><span class="number">626</span>a <span class="number">6563</span> <span class="number">74</span>			    bject</span><br><span class="line"><span class="number">4f</span>2c <span class="number">148</span>a <span class="number">4024</span> fb12     序列号</span><br><span class="line"><span class="number">02</span>      flag，表示可序列化</span><br><span class="line"><span class="number">0001</span> 	字段个数，<span class="number">1</span>个</span><br><span class="line"><span class="number">49</span>    TypeCode,I,表示<span class="keyword">int</span>类型</span><br><span class="line"><span class="number">00</span> <span class="number">0</span>a  字段名长度,<span class="number">10</span>个字节</span><br><span class="line"><span class="number">69</span> <span class="number">6e6</span>e <span class="number">6572</span> <span class="number">5661</span> <span class="number">6</span>c75 <span class="number">65</span> innerValue</span><br><span class="line"><span class="number">78</span> 标志位:TC_ENDBLOCKDATA,对象的数据块描述的结束</span><br><span class="line"><span class="number">70</span> 标志位:TC_NULL,Null object reference.</span><br><span class="line"><span class="number">0000</span> <span class="number">00</span>c8  innervalue的值:<span class="number">200</span></span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>反序列化:<code>readObject()</code></p>
+<p> 反序列化过程就是按照前面介绍的序列化算法来解析二进制数据。</p>
+<p> 有一个需要注意的问题就是，如果子类实现了<code>Serializable</code>接口，但是父类没有实现<code>Serializable</code>接口，这个时候进行反序列化会发生什么情况？</p>
+<p> 答：如果父类有默认构造函数的话，即使没有实现<code>Serializable</code>接口也不会有问题，反序列化的时候会调用默认构造函数进行初始化，否则的话反序列化的时候会抛出<code>.InvalidClassException:</code>异常，异常原因为<code>no valid constructor</code>。</p>
+</li>
+</ol>
+<h4 id="第四部分-Other"><a href="#第四部分-Other" class="headerlink" title="第四部分:Other"></a>第四部分:Other</h4><ol>
+<li><p><code>static</code>和<code>transient</code>字段不能被序列化。</p>
+<p> 序列化的时候所有的数据都是来自于<code>ObejctStreamClass</code>对象，在生成<code>ObjectStreamClass</code>的构造函数中会调用<code>fields = getSerialFields(cl);</code>这句代码来获取需要被序列化的字段，<code>getSerialFields()</code>方法实际上是调用<code>getDefaultSerialFields()</code>方法的，<code>getDefaultSerialFields()</code>实现如下:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> ObjectStreamField[] getDefaultSerialFields(Class&lt;?&gt; cl) &#123;</span><br><span class="line">    Field[] clFields = cl.getDeclaredFields();</span><br><span class="line">    ArrayList&lt;ObjectStreamField&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">int</span> mask = Modifier.STATIC | Modifier.TRANSIENT;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; clFields.length; i++) &#123;</span><br><span class="line">        <span class="keyword">if</span> ((clFields[i].getModifiers() &amp; mask) == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">// 如果字段既不是static也不是transient的才会被加入到需要被序列化字段列表中去</span></span><br><span class="line">            list.add(<span class="keyword">new</span> ObjectStreamField(clFields[i], <span class="keyword">false</span>, <span class="keyword">true</span>));</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">int</span> size = list.size();</span><br><span class="line">    <span class="keyword">return</span> (size == <span class="number">0</span>) ? NO_FIELDS :</span><br><span class="line">        list.toArray(<span class="keyword">new</span> ObjectStreamField[size]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 从上面的代码中可以很明显的看到，<strong><em>在计算需要被序列化的字段的时候会把被<code>static</code>和<code>transient</code>修饰的字段给过滤掉</em></strong>。</p>
+<p> 在进行反序列化的时候会给默认值。</p>
+</li>
+<li><p>如何实现自定义序列化和反序列化？</p>
+<p> 只需要被序列化的对象所属的类定义了<code>void writeObject(ObjectOutputStream oos)</code>和<code>void readObject(ObjectInputStream ois)</code>方法即可，<code>Java</code>序列化和反序列化的时候会调用这两个方法，那么这个功能是怎么实现的呢？</p>
+<ol>
+<li><p>在<code>ObjectClassStream</code>类的构造函数中有下面几行代码:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">cons = getSerializableConstructor(cl);</span><br><span class="line">writeObjectMethod = getPrivateMethod(cl, <span class="string">"writeObject"</span>,</span><br><span class="line">    <span class="keyword">new</span> Class&lt;?&gt;[] &#123; ObjectOutputStream.class &#125;,</span><br><span class="line">    Void.TYPE);</span><br><span class="line">readObjectMethod = getPrivateMethod(cl, <span class="string">"readObject"</span>,</span><br><span class="line">    <span class="keyword">new</span> Class&lt;?&gt;[] &#123; ObjectInputStream.class &#125;,</span><br><span class="line">    Void.TYPE);</span><br><span class="line">readObjectNoDataMethod = getPrivateMethod(</span><br><span class="line">    cl, <span class="string">"readObjectNoData"</span>, <span class="keyword">null</span>, Void.TYPE);</span><br><span class="line">hasWriteObjectData = (writeObjectMethod != <span class="keyword">null</span>);</span><br></pre></td></tr></table></figure>
+<p> <code>getPrivateMethod()</code>方法实现如下:</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> Method <span class="title">getPrivateMethod</span><span class="params">(Class&lt;?&gt; cl, String name,</span></span></span><br><span class="line"><span class="function"><span class="params">                                   Class&lt;?&gt;[] argTypes,</span></span></span><br><span class="line"><span class="function"><span class="params">                                   Class&lt;?&gt; returnType)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Method meth = cl.getDeclaredMethod(name, argTypes);</span><br><span class="line">        meth.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        <span class="keyword">int</span> mods = meth.getModifiers();</span><br><span class="line">        <span class="keyword">return</span> ((meth.getReturnType() == returnType) &amp;&amp;</span><br><span class="line">                ((mods &amp; Modifier.STATIC) == <span class="number">0</span>) &amp;&amp;</span><br><span class="line">                ((mods &amp; Modifier.PRIVATE) != <span class="number">0</span>)) ? meth : <span class="keyword">null</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NoSuchMethodException ex) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到在<code>ObejctStreamClass</code>的构造函数中会查找被序列化类中有没有定义为<code>void writeObject(ObjectOutputStream oos)</code> 的函数，如果找到的话，则会把找到的方法赋值给writeObjectMethod这个变量，如果没有找到的话则为null。</p>
+</li>
+<li><p>在调用<code>writeSerialData()</code>方法写入序列化数据的时候有</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">writeSerialData</span><span class="params">(Object obj, ObjectStreamClass desc)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> IOException</span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ObjectStreamClass.ClassDataSlot[] slots = desc.getClassDataLayout();</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; slots.length; i++) &#123;</span><br><span class="line">        ObjectStreamClass slotDesc = slots[i].desc;</span><br><span class="line">        <span class="keyword">if</span> (slotDesc.hasWriteObjectMethod()) &#123;</span><br><span class="line">            <span class="comment">// 其他一些省略代码</span></span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                curContext = <span class="keyword">new</span> SerialCallbackContext(obj, slotDesc);</span><br><span class="line">                bout.setBlockDataMode(<span class="keyword">true</span>);</span><br><span class="line">                <span class="comment">// 在这里调用用户自定义的方法</span></span><br><span class="line">                slotDesc.invokeWriteObject(obj, <span class="keyword">this</span>);</span><br><span class="line">                bout.setBlockDataMode(<span class="keyword">false</span>);</span><br><span class="line">                bout.writeByte(TC_ENDBLOCKDATA);</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                curContext.setUsed();</span><br><span class="line">                curContext = oldContext;</span><br><span class="line">                <span class="keyword">if</span> (extendedDebugInfo) &#123;</span><br><span class="line">                    debugInfoStack.pop();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            curPut = oldPut;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            defaultWriteFields(obj, slotDesc);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 首先会调用<code>hasWriteObjectMethod()</code>方法判断有没有自定义的<code>writeObject()</code>,代码如下</p>
+ <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">boolean</span> <span class="title">hasWriteObjectMethod</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (writeObjectMethod != <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> <code>hasWriteObjectMethod()</code>这个方法仅仅是判断<code>writeObjectMethod</code>是不是等于<code>null</code>，而上面说了，如果用户自定义了<code>void writeObject(ObjectOutputStream oos)</code>这么个方法，则<code>writeObjectMethod</code>不为<code>null</code>，在<code>if()</code>代码块中会调用<code>slotDesc.invokeWriteObject(obj, this);</code>方法，该方法中会调用用户自定义的<code>writeObject()</code>方法。</p>
+</li>
+</ol>
+</li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/源码分析/" rel="tag"># 源码分析</a>
+          
+            <a href="/tags/博客迁移/" rel="tag"># 博客迁移</a>
+          
+            <a href="/tags/Java/" rel="tag"># Java</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/11/时间波之时间裂缝说/" rel="next" title="时间波之时间裂缝说">
+                <i class="fa fa-chevron-left"></i> 时间波之时间裂缝说
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/03/11/这个Jedis的坑你肯定没踩过！记一次深坑排查过程/" rel="prev" title="这个Jedis的坑你肯定没踩过！记一次深坑排查过程">
+                这个Jedis的坑你肯定没踩过！记一次深坑排查过程 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-4"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第一部分-What"><span class="nav-number">2.</span> <span class="nav-text">第一部分:What</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第二部分-How"><span class="nav-number">3.</span> <span class="nav-text">第二部分:How</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第三部分-Why"><span class="nav-number">4.</span> <span class="nav-text">第三部分:Why</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第四部分-Other"><span class="nav-number">5.</span> <span class="nav-text">第四部分:Other</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
