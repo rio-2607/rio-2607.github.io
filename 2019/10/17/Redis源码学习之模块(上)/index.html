@@ -87,7 +87,7 @@
 <meta property="og:site_name" content="天凉好个秋">
 <meta property="og:description" content="WhatRedis Module系统是Redis4引入的一个新特性（很惭愧的是现在才知道，一直以为是Redis5引进的新特性😢）。通过Redis Module可以扩展Redis本身的能力，能够实现一些Redis本身不支持的命令。 虽然Redis已经提供了Lua脚本的编程能力来扩展Redis的能力，但是Lua脚本只能组合现有的数据结构和命令，没法创建新的命令。除此之外，Redis模块还具有以下几个">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-10-20T13:18:14.509Z">
+<meta property="og:updated_time" content="2019-10-20T13:19:36.907Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Redis模块学习(上):What And How">
 <meta name="twitter:description" content="WhatRedis Module系统是Redis4引入的一个新特性（很惭愧的是现在才知道，一直以为是Redis5引进的新特性😢）。通过Redis Module可以扩展Redis本身的能力，能够实现一些Redis本身不支持的命令。 虽然Redis已经提供了Lua脚本的编程能力来扩展Redis的能力，但是Lua脚本只能组合现有的数据结构和命令，没法创建新的命令。除此之外，Redis模块还具有以下几个">
@@ -430,7 +430,7 @@
 <li><p><code>RedisModule_OpenKey()</code>。<br><code>RedisModule_OpenKey()</code>方法会返回代表对应的<code>Redis Key</code>的句柄，如果对应的<code>key</code>不存在，且传入的是<code>WRITTE</code>，则依然会返回句柄，在之后对key进行写操作时会生成对应的键值对。如果传入的是<code>READ</code>则直接返回<code>NULL</code>，但是这样不会影响后续的<code>RedisModule_CloseKey()</code>方法。</p>
 </li>
 </ol>
-<h3 id="Why"><a href="#Why" class="headerlink" title="Why"></a>Why</h3><p><a href="http://slogen.xyz/2019/10/20/Redis%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%A8%A1%E5%9D%97(%E4%B8%8B" target="_blank" rel="noopener">Redis源码学习之模块(下)</a>/)</p>
+<h3 id="Why"><a href="#Why" class="headerlink" title="Why"></a>Why</h3><p><a href="http://slogen.xyz/2019/10/20/Redis%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0%E4%B9%8B%E6%A8%A1%E5%9D%97(%E4%B8%8B\\" target="_blank" rel="noopener">Redis源码学习之模块(下)</a>/)</p>
 <h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><ol>
 <li><a href="https://itnext.io/redis-5-x-under-the-hood-3-writing-a-redis-module-43fa42a6367d" target="_blank" rel="noopener">Redis 5.X under the hood: 3 — Writing a Redis Module</a></li>
 <li><a href="https://redis.io/topics/modules-intro" target="_blank" rel="noopener">Redis Modules: an introduction to the API</a></li>
