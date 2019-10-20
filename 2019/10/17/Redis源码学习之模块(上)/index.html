@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Redis,源码,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="WhatRedis Module系统是Redis4引入的一个新特性（很惭愧的是现在才知道，一直以为是Redis5引进的新特性😢）。通过Redis Module可以扩展Redis本身的能力，能够实现一些Redis本身不支持的命令。 虽然Redis已经提供了Lua脚本的编程能力来扩展Redis的能力，但是Lua脚本只能组合现有的数据结构和命令，没法创建新的命令。除此之外，Redis模块还具有以下几个">
+<meta name="keywords" content="Redis,源码">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis模块学习(上):What And How">
+<meta property="og:url" content="http://yoursite.com/2019/10/17/Redis源码学习之模块(上)/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="WhatRedis Module系统是Redis4引入的一个新特性（很惭愧的是现在才知道，一直以为是Redis5引进的新特性😢）。通过Redis Module可以扩展Redis本身的能力，能够实现一些Redis本身不支持的命令。 虽然Redis已经提供了Lua脚本的编程能力来扩展Redis的能力，但是Lua脚本只能组合现有的数据结构和命令，没法创建新的命令。除此之外，Redis模块还具有以下几个">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-10-20T13:08:02.616Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis模块学习(上):What And How">
+<meta name="twitter:description" content="WhatRedis Module系统是Redis4引入的一个新特性（很惭愧的是现在才知道，一直以为是Redis5引进的新特性😢）。通过Redis Module可以扩展Redis本身的能力，能够实现一些Redis本身不支持的命令。 虽然Redis已经提供了Lua脚本的编程能力来扩展Redis的能力，但是Lua脚本只能组合现有的数据结构和命令，没法创建新的命令。除此之外，Redis模块还具有以下几个">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/10/17/Redis源码学习之模块(上)/">
+
+
+
+
+
+  <title>Redis模块学习(上):What And How | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/10/17/Redis源码学习之模块(上)/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Redis模块学习(上):What And How</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-10-17T20:22:31+08:00">
+                2019-10-17
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index">
+                    <span itemprop="name">Redis</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/10/17/Redis源码学习之模块(上)/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/10/17/Redis源码学习之模块(上)/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="What"><a href="#What" class="headerlink" title="What"></a>What</h3><p>Redis Module系统是Redis4引入的一个新特性（很惭愧的是现在才知道，一直以为是Redis5引进的新特性😢）。通过Redis Module可以扩展Redis本身的能力，能够实现一些Redis本身不支持的命令。</p>
+<p>虽然Redis已经提供了Lua脚本的编程能力来扩展Redis的能力，但是Lua脚本只能组合现有的数据结构和命令，没法创建新的命令。除此之外，Redis模块还具有以下几个优点：</p>
+<ol>
+<li>作为一个C语言开发的库，Redis Module消耗更少的资源，运行的更快。而且在开发Redis模块的过程中还可以调用第三方的库。</li>
+<li>Redis模块实现的命令可以直接被客户端调用，就好像Redis原生的命令一样。而Lua脚本只能通过EVAL/EVALSHA命令进行调用。</li>
+<li>暴露给Redis模块的API比Lua脚本的要丰富的多。</li>
+</ol>
+<h3 id="How"><a href="#How" class="headerlink" title="How"></a>How</h3><h4 id="加载模块"><a href="#加载模块" class="headerlink" title="加载模块"></a>加载模块</h4><p>Redis模块可以通过在Redis的配置文件<code>redis.conf</code>中添加下面指令来加载：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">loadmodule /path/to/module.so</span><br></pre></td></tr></table></figure></p>
+<p>也可以在Redis已经启动之后的运行时通过<code>module</code>命令来加载模块：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MODULE LOAD /path/to/module.so</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; module list</span><br><span class="line">(empty list or set)</span><br><span class="line">127.0.0.1:6379&gt; module load /Users/Slogen/Documents/code/slogen/module/module.o</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; module list</span><br><span class="line">1) 1) &quot;name&quot;</span><br><span class="line">   2) &quot;list_extend&quot;</span><br><span class="line">   3) &quot;ver&quot;</span><br><span class="line">   4) (integer) 1</span><br><span class="line">127.0.0.1:6379&gt;</span><br></pre></td></tr></table></figure>
+<p>可以使用<code>MODULE LIST</code>命令来列出已经加载的模块。</p>
+<p>使用<code>MODULE UNLOAD</code>命令来卸载已经加载的模块:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; module unload list_extend</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; module list</span><br><span class="line">(empty list or set)</span><br></pre></td></tr></table></figure></p>
+<p>Redis模块API在设计支出就考虑到了将来（可能出现的）兼容性问题，所以无论Redis核心发生了什么变化，你现在开发的Redis模块，只要API不变，4年后仍然能运行。基于这些基本原理，设计了两种不同的API来访问Redis的数据空间。</p>
+<ul>
+<li>第一种是一些低级API。这些API提供了一系列操作可以更快速的访问以及操作Redis的数据结构。Redis开发者可以创建同Redis原生命令一样的强大且高性能的命令。</li>
+<li>另一种API高级API可以调用Redis命令并且获取命令执行结果，就如同Lua脚本访问Redis一样。</li>
+</ul>
+<h4 id="开发自己的模块"><a href="#开发自己的模块" class="headerlink" title="开发自己的模块"></a>开发自己的模块</h4><p>开发一个模块最直接的方式就是从Redis的<a href="https://github.com/antirez/redis/blob/5.0/src/redismodule.h" target="_blank" rel="noopener">官方仓库</a>下载<code>redismodule.h</code>文件，然后拷贝到自己的项目里面去。实现自己的模块的逻辑，链接所有依赖的第三方库，最后生成一个导出了<code>RedisModule_OnLoad()</code>方法的动态链接库。</p>
+<p>我们这次要用C语言开发一个扩展模块：<code>LIST_EXTEND</code>，这个模块有个命令<code>FILTER</code>。<br>调用方式如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LIST_EXTEND.FILTER SOURCE_LIST DEST_LIST LOW_VALUE HIGH_VALUE</span><br></pre></td></tr></table></figure>
+<p>这个命令会去读取指定(<code>list</code>类型的)<code>SOURCE_LIST</code>的数据，然后按照下面的规则进行过滤：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LOW_VALUE &lt;= ELEMENT VALUE &lt;= HIGH_VALUE</span><br></pre></td></tr></table></figure></p>
+<p>然后新生成一个新的列表（如果存在则先删除），过滤之后的数据设置为为这个新的列表的数据。</p>
+<p>如果<code>LOW_VALUE &gt; MAX_VALUE</code>,结果就是一个空列表。</p>
+<p>其中<code>LOW_VALUE</code>和<code>MAX_VALUE</code>可以是字符串<code>-inf</code>和<code>+inf</code>表示不限制最小值和最大值。</p>
+<p>这个命令会返回新列表元素的个数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; module load /Users/slogen/Documents/code/slogen/module/module.o</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; LPUSH source_list 20 2 30 1 40</span><br><span class="line">(integer) 5</span><br><span class="line">127.0.0.1:6379&gt; LIST_EXTEND.FILTER source_list destination_list 2 20</span><br><span class="line">(integer) 2</span><br><span class="line">127.0.0.1:6379&gt; LRANGE destination_list 0 -1</span><br><span class="line">1) &quot;2&quot;</span><br><span class="line">2) &quot;20&quot;</span><br><span class="line">127.0.0.1:6379&gt;</span><br></pre></td></tr></table></figure>
+<p>首先下载<code>redismodule.h</code>文件放到自己的项目目录，然后新建一个<code>.c</code>文件:<code>mymodule.c</code>(文件名随意)：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">//</span><br><span class="line">// Created by Slogen on 2019/10/16.</span><br><span class="line">//</span><br><span class="line">#include &quot;redismodule.h&quot;</span><br><span class="line">#include &lt;limits.h&gt;</span><br><span class="line"></span><br><span class="line">// 检查给定的参数是否超过限制</span><br><span class="line">int checkLimit(RedisModuleString *argv,RedisModuleString *expect,long long *value,int dValue) &#123;</span><br><span class="line">    if(0 == RedisModule_StringCompare(argv,expect)) &#123;</span><br><span class="line">        *value = dValue;</span><br><span class="line">        return 1;</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        if(REDISMODULE_OK == RedisModule_StringToLongLong(argv,value)) &#123;</span><br><span class="line">            return 1;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    return 0;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">int ListExtendFilter_RedisCommand(RedisModuleCtx *ctx,RedisModuleString **argv,int argc) &#123;</span><br><span class="line">    if(argc != 5) &#123;</span><br><span class="line">        return RedisModule_WrongArity(ctx);</span><br><span class="line">    &#125;</span><br><span class="line">    // 让redis自动管理内存</span><br><span class="line">    RedisModule_AutoMemory(ctx);</span><br><span class="line">    // 打开源数据key</span><br><span class="line">    RedisModuleKey *sourceListkey = (RedisModuleKey *)RedisModule_OpenKey(ctx,argv[1],REDISMODULE_WRITE | REDISMODULE_READ);</span><br><span class="line">    int sourceListKeyType = RedisModule_KeyType(sourceListkey);</span><br><span class="line">    if(REDISMODULE_KEYTYPE_LIST != sourceListKeyType &amp;&amp; REDISMODULE_KEYTYPE_EMPTY != sourceListKeyType) &#123;</span><br><span class="line">        RedisModule_CloseKey(sourceListkey);</span><br><span class="line">        return RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 打开目标key</span><br><span class="line">    RedisModuleKey *destinationListKey = (RedisModuleKey *)RedisModule_OpenKey(ctx,argv[2],REDISMODULE_WRITE);</span><br><span class="line">    RedisModule_DeleteKey(destinationListKey);</span><br><span class="line"></span><br><span class="line">    // 获取源数据列表的长度</span><br><span class="line">    size_t sourceListLentth = RedisModule_ValueLength(sourceListkey);</span><br><span class="line">    if(0 == sourceListLentth) &#123;</span><br><span class="line">        RedisModule_ReplyWithLongLong(ctx,0L);</span><br><span class="line">        return REDISMODULE_OK;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    char strLowerLimit[] = &quot;-inf&quot;;</span><br><span class="line">    char strUpperLimit[] = &quot;+inf&quot;;</span><br><span class="line">    RedisModuleString *expectedMinusInf,*expectedPlusInf;</span><br><span class="line"></span><br><span class="line">    long long lowerLimit;</span><br><span class="line">    long long upperLimit;</span><br><span class="line">    int lowerLimitOk = 0;</span><br><span class="line">    int upperLimitOk = 0;</span><br><span class="line"></span><br><span class="line">    expectedMinusInf = RedisModule_CreateString(ctx,strLowerLimit,4);</span><br><span class="line">    expectedPlusInf = RedisModule_CreateString(ctx,strUpperLimit,4);</span><br><span class="line"></span><br><span class="line">    lowerLimitOk = checkLimit(argv[3],expectedMinusInf,&amp;lowerLimit,LONG_MIN);</span><br><span class="line">    upperLimitOk = checkLimit(argv[4],expectedPlusInf,&amp;upperLimit,LONG_MAX);</span><br><span class="line"></span><br><span class="line">    // the number of added elements to the destination_list</span><br><span class="line">    size_t added = 0;</span><br><span class="line">    for(size_t pos = 0;pos &lt; sourceListLentth;++pos) &#123;</span><br><span class="line">        RedisModuleString *ele = RedisModule_ListPop(sourceListkey,REDISMODULE_LIST_TAIL);</span><br><span class="line">        RedisModule_ListPush(sourceListkey,REDISMODULE_LIST_HEAD,ele);</span><br><span class="line">        long long val;</span><br><span class="line">        if(REDISMODULE_OK == RedisModule_StringToLongLong(ele,&amp;val) &amp;&amp; 1 == lowerLimitOk &amp;&amp; 1 == upperLimitOk) &#123;</span><br><span class="line">            if(val &gt;= lowerLimit &amp;&amp; val &lt;= upperLimit) &#123;</span><br><span class="line">                RedisModuleString *newele = RedisModule_CreateStringFromLongLong(ctx,val);</span><br><span class="line"></span><br><span class="line">                // push to destination_list</span><br><span class="line">                if(REDISMODULE_ERR == RedisModule_ListPush(destinationListKey,REDISMODULE_LIST_HEAD,newele)) &#123;</span><br><span class="line">                    return REDISMODULE_ERR;</span><br><span class="line">                &#125;</span><br><span class="line">                added++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    RedisModule_ReplyWithLongLong(ctx,added);</span><br><span class="line">    RedisModule_ReplicateVerbatim(ctx);</span><br><span class="line">    return REDISMODULE_OK;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">// Redis 模块的入口函数</span><br><span class="line">int RedisModule_OnLoad(RedisModuleCtx *ctx,RedisModuleString **argv,int argc) &#123;</span><br><span class="line">    if(REDISMODULE_ERR == RedisModule_Init(ctx,&quot;list_extend&quot;,1,REDISMODULE_APIVER_1)) &#123;</span><br><span class="line">        return REDISMODULE_ERR;</span><br><span class="line">    &#125;</span><br><span class="line">    if(REDISMODULE_ERR == RedisModule_CreateCommand(ctx,&quot;list_extend.filter&quot;,ListExtendFilter_RedisCommand,&quot;write deny-oom&quot;,1,1,1)) &#123;</span><br><span class="line">        return REDISMODULE_ERR;</span><br><span class="line">    &#125;</span><br><span class="line">    return REDISMODULE_OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>模块开发完毕之后，需要编译：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -fPIC -shared -std=gnu99 -o module.o module.c</span><br></pre></td></tr></table></figure>
+<p>上述命令会在当前目录生成<code>module.o</code>文件，然后连接Redis Server，使用<code>MODULE LOAD</code>命令加载模块。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">127.0.0.1:6379&gt; module load /Users/slogen/Documents/code/slogen/module/module.o</span><br><span class="line">OK</span><br><span class="line">127.0.0.1:6379&gt; LPUSH source_list 20 2 30 1 40</span><br><span class="line">(integer) 5</span><br><span class="line">127.0.0.1:6379&gt; LIST_EXTEND.FILTER source_list destination_list 2 20</span><br><span class="line">(integer) 2</span><br><span class="line">127.0.0.1:6379&gt; LRANGE destination_list 0 -1</span><br><span class="line">1) &quot;2&quot;</span><br><span class="line">2) &quot;20&quot;</span><br></pre></td></tr></table></figure>
+<p>如果一切顺利的话，模块已经被加载到Redis系统了，但是有可能会出现报错:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Module module.o does not export RedisModule_OnLoad() symbol. Module not loaded</span><br></pre></td></tr></table></figure>
+<p>而且检查了代码，的确存在<code>RedisModule_OnLoad()</code>方法，那么一个可能的原因是代码是用C++写的而不是C(扩展名是.cpp而不是.c)。</p>
+<p>C++编译器在对源码进行编译的时候会做名字转换，所以源码中的<code>RedisModule_OnLoad</code>方法名会被转换成其他的名字。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">➜  module nm module.o | grep OnLoad</span><br><span class="line">0000000000001520 T __Z18RedisModule_OnLoadP14RedisModuleCtxPP17RedisModuleStringi</span><br></pre></td></tr></table></figure>
+<h4 id="模块原理分析"><a href="#模块原理分析" class="headerlink" title="模块原理分析"></a>模块原理分析</h4><p>Redis模块的入口点在于<code>RedisModule_OnLoad()</code>方法，在这个方法里面，可以对模块进行初始化，注册模块命令以及模块中可能会用到的数据结构。</p>
+<p>现在来看下<code>RedisModule_OnLoad()</code>方法的实现：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">int RedisModule_OnLoad(RedisModuleCtx *ctx,RedisModuleString **argv,int argc) &#123;</span><br><span class="line">    // 1. 初始化模块属性</span><br><span class="line">    if(REDISMODULE_ERR == RedisModule_Init(ctx,&quot;list_extend&quot;,1,REDISMODULE_APIVER_1)) &#123;</span><br><span class="line">        return REDISMODULE_ERR;</span><br><span class="line">    &#125;</span><br><span class="line">    // 2. 注册模块命令。</span><br><span class="line">    // &quot;write&quot;: 模块命令可能会修改数据，也会读取数据</span><br><span class="line">    // &quot;deny-oom&quot;: 命令使用过程中需要使用额外的内存，因此需要预防出现oom的情况</span><br><span class="line">    if(REDISMODULE_ERR == RedisModule_CreateCommand(ctx,&quot;list_extend.filter&quot;,ListExtendFilter_RedisCommand,&quot;write deny-oom&quot;,1,1,1)) &#123;</span><br><span class="line">        return REDISMODULE_ERR;</span><br><span class="line">    &#125;</span><br><span class="line">    return REDISMODULE_OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>RedisModule_OnLoad()</code>方法中首先要调用<code>RedisModule_Init()</code>方法方法。</p>
+<p><code>RedisModule_Init()</code>方法的原型如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">static int RedisModule_Init(RedisModuleCtx *ctx, const char *name, int ver, int apiver);</span><br></pre></td></tr></table></figure>
+<p><code>RedisModule_Init()</code>方法会向Redis模块系统注册该模块的名称、版本以及自己需要的API的版本。</p>
+<p>在<code>RedisModule_Init()</code>方法中会完成Redis模块系统对外暴露的API的注册，这个后面会讲。</p>
+<p>接下来需要调用<code>RedisModule_CreateCommand()</code>方法来注册模块的命令，该方法原型如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">int RedisModule_CreateCommand(RedisModuleCtx *ctx, const char *name, RedisModuleCmdFunc cmdfunc, const char *strflags, int firstkey, int lastkey, int keystep);</span><br></pre></td></tr></table></figure></p>
+<p>其中几个关键的参数含义为：</p>
+<ul>
+<li><code>name</code>: 命令的名称。</li>
+<li><code>cmdfunc</code>: 命令的实现，函数指针。</li>
+<li><code>strflags</code>: 这个参数用来标识模块命令的具体行为，需要是一个空格分隔的C风格的字符串。本次开发的模块传入的是”write deny-oom”(其他的一些属性后面再说)。<ul>
+<li><code>write</code>: 表示模块会修改数据(也会读取数据)。</li>
+<li><code>deny-oom</code>: 表示命令需要额外的内存，为了预防出现OOM的情况，在内存不够的情况下拒绝执行。</li>
+</ul>
+</li>
+</ul>
+<p>如果没有任何报错的话就返回<code>REDISMODULE_OK</code>常量。</p>
+<p>在调用<code>RedisModule_CreateCommand()</code>方法的时候传入了命令回调句柄，现在来看看命令的实现<code>ListExtendFilter_RedisCommand()</code>方法：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line">int ListExtendFilter_RedisCommand(RedisModuleCtx *ctx,RedisModuleString **argv,int argc) &#123;</span><br><span class="line">    // 1. 检查参数个数是都符合要求</span><br><span class="line">    if(argc != 5) &#123;</span><br><span class="line">        return RedisModule_WrongArity(ctx);</span><br><span class="line">    &#125;</span><br><span class="line">    // 2. 让redis自动管理内存:注意：如果需要模块系统自动管理内存，则需要首先调用这个方法</span><br><span class="line">    RedisModule_AutoMemory(ctx);</span><br><span class="line">    // 3. 打开源数据key</span><br><span class="line">    RedisModuleKey *sourceListkey = (RedisModuleKey *)RedisModule_OpenKey(ctx,argv[1],REDISMODULE_WRITE | REDISMODULE_READ);</span><br><span class="line">    // 4. 获取源数据key类型</span><br><span class="line">    int sourceListKeyType = RedisModule_KeyType(sourceListkey);</span><br><span class="line">    // 5. 校验类型</span><br><span class="line">    if(REDISMODULE_KEYTYPE_LIST != sourceListKeyType &amp;&amp; REDISMODULE_KEYTYPE_EMPTY != sourceListKeyType) &#123;</span><br><span class="line">        RedisModule_CloseKey(sourceListkey);</span><br><span class="line">        return RedisModule_ReplyWithError(ctx,REDISMODULE_ERRORMSG_WRONGTYPE);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 6. 打开结果key</span><br><span class="line">    RedisModuleKey *destinationListKey = (RedisModuleKey *)RedisModule_OpenKey(ctx,argv[2],REDISMODULE_WRITE);</span><br><span class="line">    // 如果结果key是可写的前存在则先删除对应的数据</span><br><span class="line">    RedisModule_DeleteKey(destinationListKey);</span><br><span class="line"></span><br><span class="line">    // 7. 获取源数据长度</span><br><span class="line">    size_t sourceListLentth = RedisModule_ValueLength(sourceListkey);</span><br><span class="line">    if(0 == sourceListLentth) &#123;</span><br><span class="line">        RedisModule_ReplyWithLongLong(ctx,0L);</span><br><span class="line">        return REDISMODULE_OK;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    char strLowerLimit[] = &quot;-inf&quot;;</span><br><span class="line">    char strUpperLimit[] = &quot;+inf&quot;;</span><br><span class="line">    RedisModuleString *expectedMinusInf,*expectedPlusInf;</span><br><span class="line"></span><br><span class="line">    long long lowerLimit;</span><br><span class="line">    long long upperLimit;</span><br><span class="line">    int lowerLimitOk = 0;</span><br><span class="line">    int upperLimitOk = 0;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    expectedMinusInf = RedisModule_CreateString(ctx,strLowerLimit,4);</span><br><span class="line">    expectedPlusInf = RedisModule_CreateString(ctx,strUpperLimit,4);</span><br><span class="line"></span><br><span class="line">    // 8. 获取上下限</span><br><span class="line">    lowerLimitOk = checkLimit(argv[3],expectedMinusInf,&amp;lowerLimit);</span><br><span class="line">    upperLimitOk = checkLimit(argv[4],expectedPlusInf,&amp;upperLimit);</span><br><span class="line"></span><br><span class="line">    // the number of added elements to the destination_list</span><br><span class="line">    size_t added = 0;</span><br><span class="line">    for(size_t pos = 0;pos &lt; sourceListLentth;++pos) &#123;</span><br><span class="line">        RedisModuleString *ele = RedisModule_ListPop(sourceListkey,REDISMODULE_LIST_TAIL);</span><br><span class="line">        RedisModule_ListPush(sourceListkey,REDISMODULE_LIST_HEAD,ele);</span><br><span class="line">        long long val;</span><br><span class="line">        if(REDISMODULE_OK == RedisModule_StringToLongLong(ele,&amp;val) &amp;&amp; 1 == lowerLimitOk &amp;&amp; 1 == upperLimitOk) &#123;</span><br><span class="line">            if(val &gt;= lowerLimit &amp;&amp; val &lt;= upperLimit) &#123;</span><br><span class="line">                // 9. 如果数据满足要求，则push进目标列表中</span><br><span class="line">                RedisModuleString *newele = RedisModule_CreateStringFromLongLong(ctx,val);</span><br><span class="line"></span><br><span class="line">                // push to destination_list</span><br><span class="line">                if(REDISMODULE_ERR == RedisModule_ListPush(destinationListKey,REDISMODULE_LIST_HEAD,newele)) &#123;</span><br><span class="line">                    return REDISMODULE_ERR;</span><br><span class="line">                &#125;</span><br><span class="line">                added++;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    RedisModule_ReplyWithLongLong(ctx,added);</span><br><span class="line">    RedisModule_ReplicateVerbatim(ctx);</span><br><span class="line">    return REDISMODULE_OK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>第一个参数是模块上下文，第二个参数是命令的入参，第三个参数表示参数的个数。</p>
+<p>整个方法的逻辑很简单，首先是校验参数，然后打开源数据列表和目标，对列表中的每个元素进行判断是否符合要求，如果符合的话则把对应的数据放进目标列表中，并统计符合要求的数据的个数作为最终的返回结果。</p>
+<p>但是有几点需要注意的是：</p>
+<ol>
+<li><p>内存管理。<br>在模块开发中，开发者可以自己进行内存管理(调用<code>RedisModule_Alloc()</code>、<code>RedisModule_Realloc()</code>或者<code>RedisModule_Calloc()</code>分配内存，调用<code>RedisModule_Free()</code>释放内存)。自己管理内存很容易造成内存泄露等问题，因此Redis提供了自动内存管理机制，只需要调用<code>RedisModule_AutoMemory()</code>方法即可。但是有一点很重要的就是<strong>如果模块实现需要让Redis自动内存管理，则需要在模块实现的最开始的地方就要调用<code>RedisModule_AutoMemory()</code>方法</strong>。</p>
+</li>
+<li><p><code>RedisModule_OpenKey()</code>。<br><code>RedisModule_OpenKey()</code>方法会返回代表对应的<code>Redis Key</code>的句柄，如果对应的<code>key</code>不存在，且传入的是<code>WRITTE</code>，则依然会返回句柄，在之后对key进行写操作时会生成对应的键值对。如果传入的是<code>READ</code>则直接返回<code>NULL</code>，但是这样不会影响后续的<code>RedisModule_CloseKey()</code>方法。</p>
+</li>
+</ol>
+<h3 id="Why"><a href="#Why" class="headerlink" title="Why"></a>Why</h3><p><a href="https://github.com/antirez/redis/blob/5.0/src/redismodule.h" target="_blank" rel="noopener">Redis源码学习之模块(下)</a></p>
+<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><ol>
+<li><a href="https://itnext.io/redis-5-x-under-the-hood-3-writing-a-redis-module-43fa42a6367d" target="_blank" rel="noopener">Redis 5.X under the hood: 3 — Writing a Redis Module</a></li>
+<li><a href="https://redis.io/topics/modules-intro" target="_blank" rel="noopener">Redis Modules: an introduction to the API</a></li>
+<li><a href="https://redis.io/topics/modules-api-ref" target="_blank" rel="noopener">Modules API reference</a></li>
+</ol>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Redis/" rel="tag"># Redis</a>
+          
+            <a href="/tags/源码/" rel="tag"># 源码</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/02/自己动手写RPC/" rel="next" title="自己动手写RPC框架">
+                <i class="fa fa-chevron-left"></i> 自己动手写RPC框架
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/10/20/Redis源码学习之模块(下)/" rel="prev" title>
+                 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">17</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#What"><span class="nav-number">1.</span> <span class="nav-text">What</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#How"><span class="nav-number">2.</span> <span class="nav-text">How</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#加载模块"><span class="nav-number">2.1.</span> <span class="nav-text">加载模块</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#开发自己的模块"><span class="nav-number">2.2.</span> <span class="nav-text">开发自己的模块</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#模块原理分析"><span class="nav-number">2.3.</span> <span class="nav-text">模块原理分析</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Why"><span class="nav-number">3.</span> <span class="nav-text">Why</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Reference"><span class="nav-number">4.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
