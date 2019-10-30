@@ -366,12 +366,8 @@
       
         
           
-          Redis源码学习之模块(上)
-WhyTODO
-Reference
-Redis 5.X under the hood: 3 — Writing a Redis Module
-Redis Modules: an introduction to the API
-Modules API reference
+          Why在Redis源码学习之模块(上)这篇文章中提到过，所有的Redis模块的入口函数都是RedisModule_OnLoad()方法，那么这个方法什么时候被调用呢？传入的参数是什么样的呢？自定义的模块命令的实现是如何被调用的？这篇文章就一一为你揭秘。
+模块加载在前文中，我们提到了在Redis中有两
           ...
           <!--noindex-->
           <div class="post-button text-center">
