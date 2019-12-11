@@ -79,19 +79,19 @@
 
 
 
-<meta name="description" content="前言只要用过Java编程的同学应该都知道，Java源码编写完成之后，使用javac编译器进行编译，编译成与系统无关的字节码文件(.class)，然后由Java虚拟机加载执行。 其从源文件到具体的执行过程如下图所示:  正常流程都是事先编写好Java源码再执行，但是有些时候(比如开发一些工具的时候，或者排查问题的时候)，如果能够动态执行源码，将会是有很大的帮助的。 其实JDK本身提供了一些API接口">
+<meta name="description" content="前言TODO 只要用过Java编程的同学应该都知道，Java源码编写完成之后，使用javac编译器进行编译，编译成与系统无关的字节码文件(.class)，然后由Java虚拟机加载执行。 其从源文件到具体的执行过程如下图所示:  正常流程都是事先编写好Java源码再执行，但是有些时候(比如开发一些工具的时候，或者排查问题的时候)，如果能够动态执行源码，将会是有很大的帮助的。 其实JDK本身提供了一些">
 <meta name="keywords" content="Java">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Java动态编译运行源码">
 <meta property="og:url" content="http://yoursite.com/2019/11/10/Java动态编译运行源码/index.html">
 <meta property="og:site_name" content="天凉好个秋">
-<meta property="og:description" content="前言只要用过Java编程的同学应该都知道，Java源码编写完成之后，使用javac编译器进行编译，编译成与系统无关的字节码文件(.class)，然后由Java虚拟机加载执行。 其从源文件到具体的执行过程如下图所示:  正常流程都是事先编写好Java源码再执行，但是有些时候(比如开发一些工具的时候，或者排查问题的时候)，如果能够动态执行源码，将会是有很大的帮助的。 其实JDK本身提供了一些API接口">
+<meta property="og:description" content="前言TODO 只要用过Java编程的同学应该都知道，Java源码编写完成之后，使用javac编译器进行编译，编译成与系统无关的字节码文件(.class)，然后由Java虚拟机加载执行。 其从源文件到具体的执行过程如下图所示:  正常流程都是事先编写好Java源码再执行，但是有些时候(比如开发一些工具的时候，或者排查问题的时候)，如果能够动态执行源码，将会是有很大的帮助的。 其实JDK本身提供了一些">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://i.loli.net/2019/11/10/YJS3EWuLvfsHdhj.png">
-<meta property="og:updated_time" content="2019-11-11T04:59:09.198Z">
+<meta property="og:updated_time" content="2019-12-11T12:05:50.014Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Java动态编译运行源码">
-<meta name="twitter:description" content="前言只要用过Java编程的同学应该都知道，Java源码编写完成之后，使用javac编译器进行编译，编译成与系统无关的字节码文件(.class)，然后由Java虚拟机加载执行。 其从源文件到具体的执行过程如下图所示:  正常流程都是事先编写好Java源码再执行，但是有些时候(比如开发一些工具的时候，或者排查问题的时候)，如果能够动态执行源码，将会是有很大的帮助的。 其实JDK本身提供了一些API接口">
+<meta name="twitter:description" content="前言TODO 只要用过Java编程的同学应该都知道，Java源码编写完成之后，使用javac编译器进行编译，编译成与系统无关的字节码文件(.class)，然后由Java虚拟机加载执行。 其从源文件到具体的执行过程如下图所示:  正常流程都是事先编写好Java源码再执行，但是有些时候(比如开发一些工具的时候，或者排查问题的时候)，如果能够动态执行源码，将会是有很大的帮助的。 其实JDK本身提供了一些">
 <meta name="twitter:image" content="https://i.loli.net/2019/11/10/YJS3EWuLvfsHdhj.png">
 
 
@@ -364,7 +364,8 @@
       
 
       
-        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>只要用过Java编程的同学应该都知道，Java源码编写完成之后，使用javac编译器进行编译，编译成与系统无关的字节码文件(.class)，然后由Java虚拟机加载执行。</p>
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>TODO</p>
+<p>只要用过Java编程的同学应该都知道，Java源码编写完成之后，使用javac编译器进行编译，编译成与系统无关的字节码文件(.class)，然后由Java虚拟机加载执行。</p>
 <p>其从源文件到具体的执行过程如下图所示:</p>
 <p><img src="https://i.loli.net/2019/11/10/YJS3EWuLvfsHdhj.png" alt="java.png"></p>
 <p>正常流程都是事先编写好Java源码再执行，但是有些时候(比如开发一些工具的时候，或者排查问题的时候)，如果能够动态执行源码，将会是有很大的帮助的。</p>
