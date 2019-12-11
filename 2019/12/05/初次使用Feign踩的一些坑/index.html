@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Java,feign,Spring Cloud,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景最近要对接公司信息中心那边提供的注册登录接口，这些接口是以HTTP形式对外提供的。之前没怎么用过HTTP框架，宇神推荐使用Feign。第一次听说Feign这么个框架，去查了下，原来是SpringCloud的一份子。使用Spring Cloud Feign，调用HTTP的时候只需要创建一个接口并用注解的方式来配置，就可以完成对服务提供方的接口绑定，然后直接注入使用就可以了，用起来还是很方便的。">
+<meta name="keywords" content="Java,feign,Spring Cloud">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Feign源码分析:记初次使用Feign踩的一些坑">
+<meta property="og:url" content="http://yoursite.com/2019/12/05/初次使用Feign踩的一些坑/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="背景最近要对接公司信息中心那边提供的注册登录接口，这些接口是以HTTP形式对外提供的。之前没怎么用过HTTP框架，宇神推荐使用Feign。第一次听说Feign这么个框架，去查了下，原来是SpringCloud的一份子。使用Spring Cloud Feign，调用HTTP的时候只需要创建一个接口并用注解的方式来配置，就可以完成对服务提供方的接口绑定，然后直接注入使用就可以了，用起来还是很方便的。">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://i.loli.net/2019/12/11/Rrl6oK3aJkfyxHw.png">
+<meta property="og:image" content="https://i.loli.net/2019/12/10/7rwJcGxj4aFyhC8.png">
+<meta property="og:image" content="https://i.loli.net/2019/12/11/RHaoj9sFChpQgP7.png">
+<meta property="og:updated_time" content="2019-12-11T12:02:10.211Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Feign源码分析:记初次使用Feign踩的一些坑">
+<meta name="twitter:description" content="背景最近要对接公司信息中心那边提供的注册登录接口，这些接口是以HTTP形式对外提供的。之前没怎么用过HTTP框架，宇神推荐使用Feign。第一次听说Feign这么个框架，去查了下，原来是SpringCloud的一份子。使用Spring Cloud Feign，调用HTTP的时候只需要创建一个接口并用注解的方式来配置，就可以完成对服务提供方的接口绑定，然后直接注入使用就可以了，用起来还是很方便的。">
+<meta name="twitter:image" content="https://i.loli.net/2019/12/11/Rrl6oK3aJkfyxHw.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/12/05/初次使用Feign踩的一些坑/">
+
+
+
+
+
+  <title>Feign源码分析:记初次使用Feign踩的一些坑 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/05/初次使用Feign踩的一些坑/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Feign源码分析:记初次使用Feign踩的一些坑</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-05T17:15:11+08:00">
+                2019-12-05
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index">
+                    <span itemprop="name">Java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/05/初次使用Feign踩的一些坑/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/12/05/初次使用Feign踩的一些坑/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>最近要对接公司信息中心那边提供的注册登录接口，这些接口是以HTTP形式对外提供的。之前没怎么用过HTTP框架，宇神推荐使用Feign。第一次听说Feign这么个框架，去查了下，原来是SpringCloud的一份子。使用Spring Cloud Feign，调用HTTP的时候只需要创建一个接口并用注解的方式来配置，就可以完成对服务提供方的接口绑定，然后直接注入使用就可以了，用起来还是很方便的。</p>
+<p>信息中心提供的接口是<code>application/x-www-form-urlencoded</code>格式编码的<code>POST</code>请求，http header里面需要传入cookie，每次请求的服务器的IP是不一样的，需要每次查询新的服务器地址。</p>
+<h3 id="问题及排查分析"><a href="#问题及排查分析" class="headerlink" title="问题及排查分析"></a>问题及排查分析</h3><p>基于以上场景，Google下Fegin的基本用法，很快就写出了代码.</p>
+<p>首先是自定义接口，使用注解来配置</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@FeignClient</span>(name = <span class="string">"remote-service"</span>,configuration = FeignConfiguration.class)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">RemoteCall</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@PostMapping</span>(value = <span class="string">"/api/auth/login?ts=&#123;ts&#125;"</span>)</span><br><span class="line">    <span class="meta">@Headers</span>(&#123;</span><br><span class="line">            <span class="string">"Cookie: xxx=yyy"</span>,</span><br><span class="line">            <span class="string">"ContentType: application/x-www-form-urlencoded"</span></span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="comment">//传给body进行x-www-form-urlencoded编码的参数统一放到map中，feign会自动解析成body的数据</span></span><br><span class="line">    <span class="function">LoginResponse <span class="title">login</span><span class="params">(URI uri, @PathVariable(<span class="string">"ts"</span>)</span> <span class="keyword">long</span> ts,Map&lt;String,String&gt; param)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>FeignConfiguration</code>类实现如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FeignConfiguration</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> ObjectFactory&lt;HttpMessageConverters&gt; messageConverters;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Encoder <span class="title">feignFormEncoder</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> FormEncoder(<span class="keyword">new</span> SpringEncoder(messageConverters));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span></span><br><span class="line">    <span class="keyword">public</span> Logger.<span class="function">Level <span class="title">logger</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 为了方便问题排查，把http的请求和响应全部打印出来</span></span><br><span class="line">        <span class="keyword">return</span> Logger.Level.FULL;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后只需要在调用HTTP请求的地方注入<code>RemoteCall</code>就可以了</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Repository</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RemoteDal</span> <span class="keyword">implements</span> <span class="title">RemoteRepository</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> RemoteCall remoteCall;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Long <span class="title">login</span><span class="params">(String phone, String md5Password, <span class="keyword">long</span> ts)</span> </span>&#123;</span><br><span class="line">        URI uri = getUri(); <span class="comment">// 获取uri</span></span><br><span class="line">        Map&lt;String,String&gt; para = buildLoginParas(phone, md5Password);</span><br><span class="line">        LoginResponse response = remoteCall.login(uri,ts,para);</span><br><span class="line">        <span class="keyword">return</span> response.getUserId();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> Map&lt;String,String&gt; <span class="title">buildLoginParas</span><span class="params">(String phone,String md5Password)</span> </span>&#123;</span><br><span class="line">        Map&lt;String,String&gt; para = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">        para.put(<span class="string">"phone"</span>,phone);</span><br><span class="line">        para.put(<span class="string">"password"</span>,md5Password);</span><br><span class="line">        para.put(<span class="string">"nickname"</span>,<span class="string">"xxxx"</span>);</span><br><span class="line">        para.put(<span class="string">"avatar"</span>,<span class="string">"xxxx"</span>);</span><br><span class="line">        <span class="keyword">return</span> para;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>程序写好后执行一遍，接口返回报错，显示<code>cookie</code>不能为空，说明cookie没有正确的设置，但是明明有在header里面设置cookie。<br>这个时候只需要看一下打印出来的的HTTP的请求，就一目了然了。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[DEBUG][2019-12-07T18:05:12.874+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] ---&gt; POST http://127.0.0.1:8080/api/auth/login?ts=1575713098 HTTP/1.1</span><br><span class="line">[DEBUG][2019-12-07T18:05:12.875+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] Content-Length: 151</span><br><span class="line">[DEBUG][2019-12-07T18:05:12.875+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] Content-Type: application/json</span><br><span class="line">[DEBUG][2019-12-07T18:05:12.876+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login]</span><br><span class="line">[DEBUG][2019-12-07T18:05:12.876+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] &#123;&quot;password&quot;:&quot;xxxxxx&quot;,&quot;phone&quot;:&quot;18621019537&quot;,&quot;nickname&quot;:&quot;xxxx&quot;,&quot;avatar&quot;:&quot;xxxxx&quot;&#125;</span><br><span class="line">[DEBUG][2019-12-07T18:05:12.876+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] ---&gt; END HTTP (151-byte body)</span><br></pre></td></tr></table></figure></p>
+<p>从日志里面可以很明显看到，通过<code>@Headers</code>注解设置的<code>header</code>都没有生效，所以<code>cookie</code>和<code>ContentType</code>为空，编码方式设被置为默认的<code>application/json</code>。</p>
+<p><strong>踩到的第一个坑：为什么<code>@Headers</code>注解没生效呢？</strong></p>
+<h4 id="第一个坑"><a href="#第一个坑" class="headerlink" title="第一个坑"></a>第一个坑</h4><p>源码面前，了无秘密，来一块从<code>Feign</code>的源码中找答案吧。</p>
+<p>但是源码的入口在哪里呢？</p>
+<p>在Java里面，一般这种只需要配置接口和注解就可以直接使用的框架的本质基本上都是通过代理和反射来实现的，而在Spring里面，一般都会有对应的<code>FactoryBean</code>，在idea中连续按下两次<code>Command+N</code>，输入<code>FeignFactoryBean</code>，结果如下图所示：</p>
+<p><img src="https://i.loli.net/2019/12/11/Rrl6oK3aJkfyxHw.png" alt="1.png"></p>
+<p>果然有一个类<code>FeignClientFactoryBean</code>，那么入口应该就是它了。</p>
+<p><code>FeignClientFactoryBean</code>的<code>getObject()</code>方法直接调用<code>getTarget()</code>方法返回生成的对象，<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&lt;T&gt; <span class="function">T <span class="title">getTarget</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  FeignContext context = <span class="keyword">this</span>.applicationContext.getBean(FeignContext.class);</span><br><span class="line">  Feign.Builder builder = feign(context); <span class="comment">// 构造器模式构造Feign对象</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// ... 省略参数校验的代码</span></span><br><span class="line"></span><br><span class="line">  String url = <span class="keyword">this</span>.url + cleanPath();</span><br><span class="line">  <span class="comment">// 如果配置了client，则设置client</span></span><br><span class="line">  Client client = getOptional(context, Client.class);</span><br><span class="line">  <span class="keyword">if</span> (client != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (client <span class="keyword">instanceof</span> LoadBalancerFeignClient) &#123;</span><br><span class="line">      client = ((LoadBalancerFeignClient) client).getDelegate();</span><br><span class="line">    &#125;</span><br><span class="line">    builder.client(client);</span><br><span class="line">  &#125;</span><br><span class="line">  Targeter targeter = get(context, Targeter.class); <span class="comment">//  生成的是HystrixFeignTargeterConfiguration对象，参考FeignAutoConfiguration.java</span></span><br><span class="line">  <span class="keyword">return</span> (T) targeter.target(<span class="keyword">this</span>, builder, context,</span><br><span class="line">			<span class="keyword">new</span> HardCodedTarget&lt;&gt;(<span class="keyword">this</span>.type, <span class="keyword">this</span>.name, url));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>getTarget()</code>方法初始化<code>FeignContext</code>上下文以及做了必要的参数校验之后，会从Spring上下文中生成<code>Target</code>对象(<code>Target</code>对象会生成最终的代理对象),接着调用生成的<code>Target</code>对象的<code>target()</code>方法生成代理对象，<code>Target.target()</code>方法实际上还是调用传入的<code>Feign.Builder</code>对象的<code>target()</code>方法:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> &lt;T&gt; <span class="function">T <span class="title">target</span><span class="params">(Target&lt;T&gt; target)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> build().newInstance(target);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>target()</code>方法首先调用<code>build()</code>方法完成最终的<code>Feign</code>对象的构建,生成的是<code>ReflectiveFeign</code>对象:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Feign <span class="title">build</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    SynchronousMethodHandler.Factory synchronousMethodHandlerFactory =</span><br><span class="line">        <span class="keyword">new</span> SynchronousMethodHandler.Factory(client, retryer, requestInterceptors, logger,</span><br><span class="line">            logLevel, decode404, closeAfterDecode, propagationPolicy);</span><br><span class="line">    ParseHandlersByName handlersByName =</span><br><span class="line">        <span class="keyword">new</span> ParseHandlersByName(contract, options, encoder, decoder, queryMapEncoder,</span><br><span class="line">            errorDecoder, synchronousMethodHandlerFactory);</span><br><span class="line">    <span class="comment">// 生成实际的feign对象</span></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> ReflectiveFeign(handlersByName, invocationHandlerFactory, queryMapEncoder);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>build()</code>首先会构造<code>MethodHander</code>工厂类以及根据名字获取<code>MethodHandler</code>的解析类之后，直接生成<code>ReflectiveFeign</code>类对象作为最终的<code>Feign</code>对象。</p>
+<p>接着继续调用刚生成返回的<code>ReflectiveFeign</code>对象的<code>newInstance()</code>方法生成代理对象:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> &lt;T&gt; <span class="function">T <span class="title">newInstance</span><span class="params">(Target&lt;T&gt; target)</span> </span>&#123;</span><br><span class="line">   <span class="comment">// 首先解析定义的FeignClient接口，其中定义的每一个方法都是一个MethodHandler</span></span><br><span class="line">   Map&lt;String, MethodHandler&gt; nameToHandler = targetToHandlersByName.apply(target);</span><br><span class="line">   Map&lt;Method, MethodHandler&gt; methodToHandler = <span class="keyword">new</span> LinkedHashMap&lt;Method, MethodHandler&gt;();</span><br><span class="line">   List&lt;DefaultMethodHandler&gt; defaultMethodHandlers = <span class="keyword">new</span> LinkedList&lt;DefaultMethodHandler&gt;();</span><br><span class="line"></span><br><span class="line">   <span class="keyword">for</span> (Method method : target.type().getMethods()) &#123;</span><br><span class="line">     <span class="keyword">if</span> (method.getDeclaringClass() == Object.class) &#123;</span><br><span class="line">       <span class="keyword">continue</span>;</span><br><span class="line">     &#125; <span class="keyword">else</span> <span class="keyword">if</span> (Util.isDefault(method)) &#123;</span><br><span class="line">       DefaultMethodHandler handler = <span class="keyword">new</span> DefaultMethodHandler(method);</span><br><span class="line">       defaultMethodHandlers.add(handler);</span><br><span class="line">       methodToHandler.put(method, handler);</span><br><span class="line">     &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">       methodToHandler.put(method, nameToHandler.get(Feign.configKey(target.type(), method)));</span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br><span class="line">   InvocationHandler handler = factory.create(target, methodToHandler);</span><br><span class="line">   T proxy = (T) Proxy.newProxyInstance(target.type().getClassLoader(),</span><br><span class="line">       <span class="keyword">new</span> Class&lt;?&gt;[] &#123;target.type()&#125;, handler);</span><br><span class="line"></span><br><span class="line">   <span class="keyword">for</span> (DefaultMethodHandler defaultMethodHandler : defaultMethodHandlers) &#123;</span><br><span class="line">     defaultMethodHandler.bindTo(proxy);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> proxy;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>newInstance()</code>方法的入参是自定义的<code>FeicnClient</code>注解的接口，在本例中就是<code>RemoteCall</code>类，在<code>newInstance()</code>方法中首先调用<code>targetToHandlersByName.apply()</code>方法，<code>targetToHandlersByName</code>是<code>ParseHandlersByName</code>类实例，该实例是在<code>build()</code>方法中生成的。从名字可以看出，这个类的作用是解析自定义的<code>FeicnClient</code>注解了的接口，把其中的每一个方法都生成一个<code>MethodHander</code>对象。</p>
+<p>那么可以想象的到，对接口中方法设置的参数极有可能是在这个方法中进行解析的，继续跟进去瞧一瞧：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Map&lt;String, MethodHandler&gt; <span class="title">apply</span><span class="params">(Target key)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 首先校验并解析自定义的FeignClient注解的接口配置</span></span><br><span class="line">  List&lt;MethodMetadata&gt; metadata = contract.parseAndValidatateMetadata(key.type());</span><br><span class="line">  Map&lt;String, MethodHandler&gt; result = <span class="keyword">new</span> LinkedHashMap&lt;String, MethodHandler&gt;();</span><br><span class="line">  <span class="comment">// 根据解析结果成成具体的</span></span><br><span class="line">  <span class="keyword">for</span> (MethodMetadata md : metadata) &#123;</span><br><span class="line">    BuildTemplateByResolvingArgs buildTemplate;</span><br><span class="line">    <span class="keyword">if</span> (!md.formParams().isEmpty() &amp;&amp; md.template().bodyTemplate() == <span class="keyword">null</span>) &#123;</span><br><span class="line">      buildTemplate = <span class="keyword">new</span> BuildFormEncodedTemplateFromArgs(md, encoder, queryMapEncoder);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (md.bodyIndex() != <span class="keyword">null</span>) &#123;</span><br><span class="line">      buildTemplate = <span class="keyword">new</span> BuildEncodedTemplateFromArgs(md, encoder, queryMapEncoder);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      buildTemplate = <span class="keyword">new</span> BuildTemplateByResolvingArgs(md, queryMapEncoder);</span><br><span class="line">    &#125;</span><br><span class="line">    result.put(md.configKey(),</span><br><span class="line">        factory.create(key, md, buildTemplate, options, decoder, errorDecoder));</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>apply()</code>中首先会调用<code>Contract.parseAndValidatateMetadata()</code>方法校验并解析自定义的<code>FeicnClient</code>注解的接口(<code>Contract</code>中定义了Feign中可使用的注解和对应的值),</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> List&lt;MethodMetadata&gt; <span class="title">parseAndValidatateMetadata</span><span class="params">(Class&lt;?&gt; targetType)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// ... 省略校验代码</span></span><br><span class="line">  <span class="keyword">for</span> (Method method : targetType.getMethods()) &#123;</span><br><span class="line">    <span class="comment">// 校验解析定义</span></span><br><span class="line">    MethodMetadata metadata = parseAndValidateMetadata(targetType, method);</span><br><span class="line">    checkState(!result.containsKey(metadata.configKey()), <span class="string">"Overrides unsupported: %s"</span>,</span><br><span class="line">        metadata.configKey());</span><br><span class="line">    result.put(metadata.configKey(), metadata);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> ArrayList&lt;&gt;(result.values());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>parseAndValidatateMetadata()</code>方法首先会进行必要的参数校验，校验通过之后会调用<code>parseAndValidateMetadata()</code>方法完成具体的解析动作:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> MethodMetadata <span class="title">parseAndValidateMetadata</span><span class="params">(Class&lt;?&gt; targetType, Method method)</span> </span>&#123;</span><br><span class="line">  MethodMetadata data = <span class="keyword">new</span> MethodMetadata(); <span class="comment">// 实例化一个对象</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// ... 省略设置必要的参数</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (targetType.getInterfaces().length == <span class="number">1</span>) &#123;</span><br><span class="line">    processAnnotationOnClass(data, targetType.getInterfaces()[<span class="number">0</span>]);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 解析类(接口)级别的注解</span></span><br><span class="line">  processAnnotationOnClass(data, targetType);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> (Annotation methodAnnotation : method.getAnnotations()) &#123;\</span><br><span class="line">    <span class="comment">// 解析方法级别的注解</span></span><br><span class="line">    processAnnotationOnMethod(data, methodAnnotation, method);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ... 省略部分代码</span></span><br><span class="line"></span><br><span class="line">  Annotation[][] parameterAnnotations = method.getParameterAnnotations();</span><br><span class="line">  <span class="keyword">int</span> count = parameterAnnotations.length;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; i++) &#123;</span><br><span class="line">    <span class="comment">// 解析方法参数级别的注解</span></span><br><span class="line">    <span class="keyword">boolean</span> isHttpAnnotation = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">if</span> (parameterAnnotations[i] != <span class="keyword">null</span>) &#123;</span><br><span class="line">      isHttpAnnotation = processAnnotationsOnParameter(data, parameterAnnotations[i], i);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (parameterTypes[i] == URI.class) &#123;</span><br><span class="line">      data.urlIndex(i);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!isHttpAnnotation &amp;&amp; parameterTypes[i] != Request.Options.class) &#123;</span><br><span class="line">      checkState(data.formParams().isEmpty(),</span><br><span class="line">          <span class="string">"Body parameters cannot be used with form parameters."</span>);</span><br><span class="line">      checkState(data.bodyIndex() == <span class="keyword">null</span>, <span class="string">"Method has too many Body parameters: %s"</span>, method);</span><br><span class="line">      data.bodyIndex(i);</span><br><span class="line">      data.bodyType(Types.resolve(targetType, targetType, genericParameterTypes[i]));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// ... 一些省略代码</span></span><br><span class="line">  <span class="keyword">return</span> data;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>parseAndValidateMetadata()</code>方法的主要功能就是解析自定义的方法并且生成对应的<code>MethodMetadata</code>对象，所以在具体实现中首先生成一个<code>MethodMetadata</code>对象，并且设置必要的参数之后就开始解析注解了。</p>
+<p>在Feign中，注解可以分为三类：类(接口)级别的注解，方法级别的注解以及方法参数级别的注解。</p>
+<p><code>processAnnotationOnClass()</code>方法用来解析类级别的注解。在Feign中实现在<code>SpringMvcContract</code>类中，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">processAnnotationOnClass</span><span class="params">(MethodMetadata data, Class&lt;?&gt; clz)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (clz.getInterfaces().length == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// 只处理RequestMapping注解</span></span><br><span class="line">    RequestMapping classAnnotation = findMergedAnnotation(clz,</span><br><span class="line">				RequestMapping.class);</span><br><span class="line">    <span class="keyword">if</span> (classAnnotation != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="comment">// 填充url里面的路径变量</span></span><br><span class="line">      <span class="keyword">if</span> (classAnnotation.value().length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        String pathValue = emptyToNull(classAnnotation.value()[<span class="number">0</span>]);</span><br><span class="line">        pathValue = resolve(pathValue);</span><br><span class="line">        <span class="keyword">if</span> (!pathValue.startsWith(<span class="string">"/"</span>)) &#123;</span><br><span class="line">          pathValue = <span class="string">"/"</span> + pathValue;</span><br><span class="line">        &#125;</span><br><span class="line">        data.template().uri(pathValue);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从实现中可以看到，Feign中只会处理类级别的<code>RequestMapping</code>注解：如果注解中的url配置有路径变量的话，则会进行填充。</p>
+<p><code>processAnnotationOnMethod()</code>方法会处理方法级别的注解，其实现同样是在<code>SpringMvcContract</code>中:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">processAnnotationOnMethod</span><span class="params">(MethodMetadata data,</span></span></span><br><span class="line"><span class="function"><span class="params">			Annotation methodAnnotation, Method method)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 对于方法级别的注解，同样也是只处理RequestMapping注解</span></span><br><span class="line">	<span class="keyword">if</span> (!RequestMapping.class.isInstance(methodAnnotation) &amp;&amp; !methodAnnotation</span><br><span class="line">			.annotationType().isAnnotationPresent(RequestMapping.class)) &#123;</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	RequestMapping methodMapping = findMergedAnnotation(method, RequestMapping.class);</span><br><span class="line">	<span class="comment">// HTTP Method</span></span><br><span class="line">	RequestMethod[] methods = methodMapping.method();</span><br><span class="line">	<span class="keyword">if</span> (methods.length == <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="comment">// 默认是get请求</span></span><br><span class="line">		methods = <span class="keyword">new</span> RequestMethod[] &#123; RequestMethod.GET &#125;;</span><br><span class="line">	&#125;</span><br><span class="line">	checkOne(method, methods, <span class="string">"method"</span>);</span><br><span class="line">	data.template().method(Request.HttpMethod.valueOf(methods[<span class="number">0</span>].name()));</span><br><span class="line"></span><br><span class="line">	<span class="comment">// url中的路径变量填充</span></span><br><span class="line">	checkAtMostOne(method, methodMapping.value(), <span class="string">"value"</span>);</span><br><span class="line">	<span class="keyword">if</span> (methodMapping.value().length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">		String pathValue = emptyToNull(methodMapping.value()[<span class="number">0</span>]);</span><br><span class="line">		<span class="keyword">if</span> (pathValue != <span class="keyword">null</span>) &#123;</span><br><span class="line">			pathValue = resolve(pathValue);</span><br><span class="line">			<span class="comment">// Append path from @RequestMapping if value is present on method</span></span><br><span class="line">			<span class="keyword">if</span> (!pathValue.startsWith(<span class="string">"/"</span>) &amp;&amp; !data.template().path().endsWith(<span class="string">"/"</span>)) &#123;</span><br><span class="line">				pathValue = <span class="string">"/"</span> + pathValue;</span><br><span class="line">			&#125;</span><br><span class="line">			data.template().uri(pathValue, <span class="keyword">true</span>);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// produces</span></span><br><span class="line">	parseProduces(data, method, methodMapping);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// consumes</span></span><br><span class="line">	parseConsumes(data, method, methodMapping);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// headers</span></span><br><span class="line">	parseHeaders(data, method, methodMapping);</span><br><span class="line"></span><br><span class="line">	data.indexToExpander(<span class="keyword">new</span> LinkedHashMap&lt;Integer, Param.Expander&gt;());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在<code>processAnnotationOnMethod()</code>方法的一开始，就会进行校验：如果不是<code>RequestMapping</code>(及其子类)注解，则直接返回不处理。</p>
+<p><strong>这里就解释了为什么通过@Headers注解设置的ContentType和Cookie每一偶生效了：因为Feign压根就不处理@Headers注解。</strong></p>
+<p>在<code>processAnnotationOnMethod()</code>中同样会检查url中是否有路径变量，有的话则填充路径变量。</p>
+<p>接下来会连续调用三个方法:<code>parseProduces()</code>、<code>parseConsumes()</code>和<code>parseHeaders()</code>分别解析方法上的produces、consumes和headers。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">parseProduces</span><span class="params">(MethodMetadata md, Method method,</span></span></span><br><span class="line"><span class="function"><span class="params">			RequestMapping annotation)</span> </span>&#123;</span><br><span class="line">        <span class="comment">// 只是简单的把RequestMapping注解的produces选项设置为HTTP请求的ACCEPT参数</span></span><br><span class="line">	String[] serverProduces = annotation.produces();</span><br><span class="line">	String clientAccepts = serverProduces.length == <span class="number">0</span> ? <span class="keyword">null</span></span><br><span class="line">			: emptyToNull(serverProduces[<span class="number">0</span>]);</span><br><span class="line">	<span class="keyword">if</span> (clientAccepts != <span class="keyword">null</span>) &#123;</span><br><span class="line">		md.template().header(ACCEPT, clientAccepts);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>parseProduces()</code>方法只是从<code>RequestMapping</code>注解上获取<code>produces</code>配置，然后设置为HTTP的Accept的配置。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">parseConsumes</span><span class="params">(MethodMetadata md, Method method,</span></span></span><br><span class="line"><span class="function"><span class="params">			RequestMapping annotation)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//  把RequestMapping注解的consumes选项设置为HTTP请求的CONTENT_TYPE</span></span><br><span class="line">	String[] serverConsumes = annotation.consumes();</span><br><span class="line">	String clientProduces = serverConsumes.length == <span class="number">0</span> ? <span class="keyword">null</span></span><br><span class="line">			: emptyToNull(serverConsumes[<span class="number">0</span>]);</span><br><span class="line">	<span class="keyword">if</span> (clientProduces != <span class="keyword">null</span>) &#123;</span><br><span class="line">		md.template().header(CONTENT_TYPE, clientProduces);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>parseConsumes()</code>方法只是简单的把RequestMapping注解的<code>consumes</code>选项的配置设置为HTTP请求的ContentType。</p>
+<p>从这里可以看出<strong>要设置ContentType，只需要在方法级别的RequestMapping注解中设置consumes选项即可</strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">parseHeaders</span><span class="params">(MethodMetadata md, Method method,</span></span></span><br><span class="line"><span class="function"><span class="params">			RequestMapping annotation)</span> </span>&#123;</span><br><span class="line">  <span class="comment">// <span class="doctag">TODO:</span> only supports one header value per key</span></span><br><span class="line">  <span class="keyword">if</span> (annotation.headers() != <span class="keyword">null</span> &amp;&amp; annotation.headers().length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">for</span> (String header : annotation.headers()) &#123;</span><br><span class="line">      <span class="keyword">int</span> index = header.indexOf(<span class="string">'='</span>);</span><br><span class="line">      <span class="keyword">if</span> (!header.contains(<span class="string">"!="</span>) &amp;&amp; index &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        md.template().header(resolve(header.substring(<span class="number">0</span>, index)),</span><br><span class="line">resolve(header.substring(index + <span class="number">1</span>).trim()));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面代码可以看出，<code>parseHeaders()</code>方法会把RequestMapping注解的<code>headers</code>选项配置的以”=”分隔的键值对分解出来设置到HTTP请求的header中去。</p>
+<p>在执行完<code>processAnnotationOnMethod()</code>方法之后，重新回到<code>parseAndValidateMetadata()</code>方法中来：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> MethodMetadata <span class="title">parseAndValidateMetadata</span><span class="params">(Class&lt;?&gt; targetType, Method method)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ... 省略部分代码</span></span><br><span class="line"></span><br><span class="line">    Annotation[][] parameterAnnotations = method.getParameterAnnotations();</span><br><span class="line">    <span class="keyword">int</span> count = parameterAnnotations.length;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; count; i++) &#123;</span><br><span class="line">      <span class="comment">// 循环遍历每一个参数，如果参数上有注解的话则处理注解</span></span><br><span class="line">      <span class="keyword">boolean</span> isHttpAnnotation = <span class="keyword">false</span>;</span><br><span class="line">      <span class="keyword">if</span> (parameterAnnotations[i] != <span class="keyword">null</span>) &#123;</span><br><span class="line">        isHttpAnnotation = processAnnotationsOnParameter(data, parameterAnnotations[i], i);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">// 如果参数是URI类型的，则标志该参数为url，可以实现动态变更请求URL</span></span><br><span class="line">      <span class="keyword">if</span> (parameterTypes[i] == URI.class) &#123;</span><br><span class="line">        data.urlIndex(i);</span><br><span class="line">      &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!isHttpAnnotation &amp;&amp; parameterTypes[i] != Request.Options.class) &#123;</span><br><span class="line">        <span class="comment">// 如果既不是HTTP的注解，参数也不是Request.Option类型，则当做http的body来处理</span></span><br><span class="line">        checkState(data.formParams().isEmpty(),</span><br><span class="line">            <span class="string">"Body parameters cannot be used with form parameters."</span>);</span><br><span class="line">        checkState(data.bodyIndex() == <span class="keyword">null</span>, <span class="string">"Method has too many Body parameters: %s"</span>, method);</span><br><span class="line">        data.bodyIndex(i);</span><br><span class="line">        data.bodyType(Types.resolve(targetType, targetType, genericParameterTypes[i]));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 省略部分代码</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> data;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p><code>parseAndValidateMetadata()</code>方法会接着来处理方法参数级别的注解,遍历所有的参数依次进行处理:</p>
+<ul>
+<li><p>如果参数上有注解，则调用<code>processAnnotationsOnParameter()</code>方法进行处理注解。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"> <span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">processAnnotationsOnParameter</span><span class="params">(MethodMetadata data,</span></span></span><br><span class="line"><span class="function"><span class="params">		Annotation[] annotations, <span class="keyword">int</span> paramIndex)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">       <span class="comment">// ... 省略代码</span></span><br><span class="line">	Method method = <span class="keyword">this</span>.processedMethods.get(data.configKey());</span><br><span class="line">         <span class="comment">// 获取参数上所有的注解,依次处理</span></span><br><span class="line">	<span class="keyword">for</span> (Annotation parameterAnnotation : annotations) &#123;</span><br><span class="line"></span><br><span class="line">     <span class="comment">// 根据注解类型，获取对应的注解处理器</span></span><br><span class="line">		AnnotatedParameterProcessor processor = <span class="keyword">this</span>.annotatedArgumentProcessors</span><br><span class="line">				.get(parameterAnnotation.annotationType());</span><br><span class="line">		<span class="keyword">if</span> (processor != <span class="keyword">null</span>) &#123;</span><br><span class="line">			Annotation processParameterAnnotation;</span><br><span class="line">			<span class="comment">// synthesize, handling @AliasFor, while falling back to parameter name on</span></span><br><span class="line">			<span class="comment">// missing String #value():</span></span><br><span class="line">			processParameterAnnotation = synthesizeWithMethodParameterNameAsFallbackValue(</span><br><span class="line">					parameterAnnotation, method, paramIndex);</span><br><span class="line">             <span class="comment">//调用处理处理器进行处理参数注解</span></span><br><span class="line">			isHttpAnnotation |= processor.processArgument(context,</span><br><span class="line">					processParameterAnnotation, method);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (isHttpAnnotation &amp;&amp; data.indexToExpander().get(paramIndex) == <span class="keyword">null</span>) &#123;</span><br><span class="line">     <span class="comment">//  如果是http注解，则保存对应的expander</span></span><br><span class="line">		TypeDescriptor typeDescriptor = createTypeDescriptor(method, paramIndex);</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.conversionService.canConvert(typeDescriptor,</span><br><span class="line">				STRING_TYPE_DESCRIPTOR)) &#123;</span><br><span class="line">			Param.Expander expander = <span class="keyword">this</span>.convertingExpanderFactory</span><br><span class="line">					.getExpander(typeDescriptor);</span><br><span class="line">			<span class="keyword">if</span> (expander != <span class="keyword">null</span>) &#123;</span><br><span class="line">				data.indexToExpander().put(paramIndex, expander);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> isHttpAnnotation;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>processAnnotationsOnParameter()</code>方法会遍历参数上的注解，对每一个注解，会根据注解的类型找到对应的注解处理器进行处理注解，目前Feign中支持的处理器有</p>
+<p><img src="https://i.loli.net/2019/12/10/7rwJcGxj4aFyhC8.png" alt="注解.png"></p>
+</li>
+<li><p>如果参数是<code>URI</code>类型，则标记该参数的索引(即使方法的第几个参数)为URI的索引，可以实现动态变更URL。</p>
+</li>
+<li>如果参数是被注解为HTTP请求的参数(由第一步中的注解处理器来判断)且<code>MethodMetadata</code>对象的<code>&lt;索引,Expander&gt;</code>映射中没有对应的索引的<code>Expander</code>映射,则会在映射表中加入当前参数索引的<code>Expander</code>映射。(<code>Expander</code>是应用于<code>Header</code>、<code>RequestLine</code>和<code>Body</code>的命名模板参数A named template parameter applied to {@link Headers}, {@linkplain RequestLine} or{@linkplain Body})</li>
+</ul>
+<p>代码继续执行，回到<code>ReflectiveFeign.apply()</code>方法中:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Map&lt;String, MethodHandler&gt; <span class="title">apply</span><span class="params">(Target key)</span> </span>&#123;</span><br><span class="line">    List&lt;MethodMetadata&gt; metadata = contract.parseAndValidatateMetadata(key.type());</span><br><span class="line">    Map&lt;String, MethodHandler&gt; result = <span class="keyword">new</span> LinkedHashMap&lt;String, MethodHandler&gt;();</span><br><span class="line">    <span class="keyword">for</span> (MethodMetadata md : metadata) &#123;</span><br><span class="line">      BuildTemplateByResolvingArgs buildTemplate;</span><br><span class="line">      <span class="keyword">if</span> (!md.formParams().isEmpty() &amp;&amp; md.template().bodyTemplate() == <span class="keyword">null</span>) &#123;</span><br><span class="line">        buildTemplate = <span class="keyword">new</span> BuildFormEncodedTemplateFromArgs(md, encoder, queryMapEncoder);</span><br><span class="line">      &#125; <span class="keyword">else</span> <span class="keyword">if</span> (md.bodyIndex() != <span class="keyword">null</span>) &#123;</span><br><span class="line">        buildTemplate = <span class="keyword">new</span> BuildEncodedTemplateFromArgs(md, encoder, queryMapEncoder);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        buildTemplate = <span class="keyword">new</span> BuildTemplateByResolvingArgs(md, queryMapEncoder);</span><br><span class="line">      &#125;</span><br><span class="line">      result.put(md.configKey(),</span><br><span class="line">          factory.create(key, md, buildTemplate, options, decoder, errorDecoder));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>apply()</code>在把所有自定义的方法转换成<code>MethodMetadata</code>对象之后，开始为每一个<code>MethodMetadata</code>构建<code>MethodHandler</code>对象，<code>MethodHandler</code>对象通过工厂类<code>SynchronousMethodHandler.Factory</code>生成，生成的是<code>SynchronousMethodHandler</code>对象。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> MethodHandler <span class="title">create</span><span class="params">(Target&lt;?&gt; target,</span></span></span><br><span class="line"><span class="function"><span class="params">                                MethodMetadata md,</span></span></span><br><span class="line"><span class="function"><span class="params">                                RequestTemplate.Factory buildTemplateFromArgs,</span></span></span><br><span class="line"><span class="function"><span class="params">                                Options options,</span></span></span><br><span class="line"><span class="function"><span class="params">                                Decoder decoder,</span></span></span><br><span class="line"><span class="function"><span class="params">                                ErrorDecoder errorDecoder)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> SynchronousMethodHandler(target, client, retryer, requestInterceptors, logger,</span><br><span class="line">      logLevel, md, buildTemplateFromArgs, options, decoder,</span><br><span class="line">      errorDecoder, decode404, closeAfterDecode, propagationPolicy);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>代码执行流继续回到<code>ReflectiveFeign.newInstance()</code>方法中:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> &lt;T&gt; <span class="function">T <span class="title">newInstance</span><span class="params">(Target&lt;T&gt; target)</span> </span>&#123;</span><br><span class="line">  Map&lt;String, MethodHandler&gt; nameToHandler = targetToHandlersByName.apply(target);</span><br><span class="line">  Map&lt;Method, MethodHandler&gt; methodToHandler = <span class="keyword">new</span> LinkedHashMap&lt;Method, MethodHandler&gt;();</span><br><span class="line">  List&lt;DefaultMethodHandler&gt; defaultMethodHandlers = <span class="keyword">new</span> LinkedList&lt;DefaultMethodHandler&gt;();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> (Method method : target.type().getMethods()) &#123;</span><br><span class="line">    <span class="comment">// 省略代码。把&lt;配置名,MethodHandler&gt;映射转换成&lt;Method,MethodHandler&gt;映射</span></span><br><span class="line">    <span class="keyword">if</span> (method.getDeclaringClass() == Object.class) &#123;</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (Util.isDefault(method)) &#123;</span><br><span class="line">      DefaultMethodHandler handler = <span class="keyword">new</span> DefaultMethodHandler(method);</span><br><span class="line">      defaultMethodHandlers.add(handler);</span><br><span class="line">      methodToHandler.put(method, handler);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      methodToHandler.put(method, nameToHandler.get(Feign.configKey(target.type(), method)));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  InvocationHandler handler = factory.create(target, methodToHandler);</span><br><span class="line">  T proxy = (T) Proxy.newProxyInstance(target.type().getClassLoader(),</span><br><span class="line">      <span class="keyword">new</span> Class&lt;?&gt;[] &#123;target.type()&#125;, handler);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">for</span> (DefaultMethodHandler defaultMethodHandler : defaultMethodHandlers) &#123;</span><br><span class="line">    defaultMethodHandler.bindTo(proxy);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> proxy;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在获取到&lt;配置key，MethodHandler&gt;映射之后，把映射转换成&lt;Method,MethodHandler&gt;对象，然后就会生成<code>InvocationHandler</code>对象。</p>
+<p>看到了<code>InvocationHandler</code>出现，熟悉Java代理的同学应该会会心一笑！</p>
+<p><code>InvocationHandler</code>对象由工厂类<code>InvocationHandlerFactory</code>生成，默认实现为<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Default</span> <span class="keyword">implements</span> <span class="title">InvocationHandlerFactory</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> InvocationHandler <span class="title">create</span><span class="params">(Target target, Map&lt;Method, MethodHandler&gt; dispatch)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> ReflectiveFeign.FeignInvocationHandler(target, dispatch);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>生成的是<code>ReflectiveFeign.FeignInvocationHandler</code>对象，该对象实现了<code>InvocationHandler</code>接口。生成<code>ReflectiveFeign.FeignInvocationHandler</code>对象的时候会传入上一步生成的<code>&lt;Method,MethodHander&gt;</code>映射。</p>
+<p>生成了<code>InvocationHandler</code>对象之后同样是熟悉的<code>Proxy.newProxyInstance</code>调用，用来生成代理对象。</p>
+<p>分析到了这里先总结下:</p>
+<p>在使用Feign当做HTTP Client的时候，只需要创建一个接口并用注解的方式来配置，就可以完成对服务提供方的接口绑定，然后直接注入使用就可以了。</p>
+<p>对于每一个自定义的接口，Feign都会生成一个代理对象，所有对接口方法的调用最终都会执行到<code>ReflectiveFeign.FeignInvocationHandler</code>类的<code>invoke()</code>方法中。</p>
+<p>整个过程时序图如下:</p>
+<p><img src="https://i.loli.net/2019/12/11/RHaoj9sFChpQgP7.png" alt="feign.png"></p>
+<p>咱们继续往下分析：</p>
+<p>上面说了，对自定义的所有的接口都会走到<code>ReflectiveFeign.FeignInvocationHandler</code>类的<code>invoke()</code>方法,<code>invoke()</code>方法实现如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ... 省略一些基本方法的处理</span></span><br><span class="line">  <span class="comment">// 本质上就是先根据被调用的方法找到对应的Methodhandler对象，然后执行invoke方法</span></span><br><span class="line">  <span class="keyword">return</span> dispatch.get(method).invoke(args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>invoke()</code>方法本质上就是根据被调用的方法找到对应的<code>MethodHandler</code>对象，然后执行对应的<code>invoke()</code>方法。(dispatch保存的数据是由ParseHandlersByName解析接口得到的映射转换而来)。  </p>
+<p><code>MethodHandler.invoke()</code>的实现是在<code>SynchronousMethodHandler</code>中,</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object[] argv)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">  <span class="comment">// 1. 构建请求模板</span></span><br><span class="line">  RequestTemplate template = buildTemplateFromArgs.create(argv);</span><br><span class="line">  Options options = findOptions(argv);</span><br><span class="line">  Retryer retryer = <span class="keyword">this</span>.retryer.clone();</span><br><span class="line">  <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// 发起http请求已经解析结果</span></span><br><span class="line">      <span class="keyword">return</span> executeAndDecode(template, options);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (RetryableException e) &#123;</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        retryer.continueOrPropagate(e);</span><br><span class="line">      &#125; <span class="keyword">catch</span> (RetryableException th) &#123;</span><br><span class="line">        Throwable cause = th.getCause();</span><br><span class="line">        <span class="keyword">if</span> (propagationPolicy == UNWRAP &amp;&amp; cause != <span class="keyword">null</span>) &#123;</span><br><span class="line">          <span class="keyword">throw</span> cause;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          <span class="keyword">throw</span> th;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (logLevel != Logger.Level.NONE) &#123;</span><br><span class="line">        logger.logRetry(metadata.configKey(), logLevel);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>MethodHandler.invoke()</code>方法总的来说就是构建请求模板，然后发起HTTP请求并把返回的响应转换成接口中定义的结构并返回。</p>
+<p>现在已经知道怎么解决第一个坑(设置header和contenttype)了。</p>
+<ul>
+<li>在<code>RequestMapping</code>注解及其子类注解(<code>PostMapping</code>、<code>GetMapping</code>)的<code>headers</code>选项中设置。</li>
+<li>在接口方法的参数中使用<code>@RequestHeader</code>注解。</li>
+<li><strong>如果只是要设置ContentType的话，还可以在<code>RequestMapping</code>注解的<code>consumes</code>选项中设置。</strong></li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@FeignClient</span>(name = <span class="string">"remote-service"</span>,configuration = FeignConfiguration.class)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">RemoteCall</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@PostMapping</span>(value = <span class="string">"/api/auth/login?ts=&#123;ts&#125;"</span>,</span><br><span class="line">            consumes = &#123;<span class="string">"application/x-www-form-urlencoded"</span>&#125;,</span><br><span class="line">            headers = &#123;<span class="string">"Cookie=xxxx=yyyy"</span>&#125;</span><br><span class="line">    )</span><br><span class="line">    <span class="function">LoginResponse <span class="title">login</span><span class="params">(URI uri, @PathVariable(<span class="string">"ts"</span>)</span> <span class="keyword">long</span> ts,Map&lt;String,String&gt; param)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>重新发起请求，结果返回还是报错，报错原因是数据格式有问题，日志打印出来的请求如下:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[DEBUG][2019-12-07T18:15:30.489+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] ---&gt; POST http://127.0.0.1:8080/api/auth/login?ts=1575713098 HTTP/1.1</span><br><span class="line">[DEBUG][2019-12-07T18:15:30.489+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] Content-Length: 209</span><br><span class="line">[DEBUG][2019-12-07T18:15:30.489+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] Content-Type: application/x-www-form-urlencoded; charset=UTF-8</span><br><span class="line">[DEBUG][2019-12-07T18:15:30.489+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] Cookie: xxxx=yyyy</span><br><span class="line">[DEBUG][2019-12-07T18:15:30.490+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] modCount=4&amp;size=4&amp;threshold=12&amp;&amp;table=password%3Dxxxxxx&amp;table=phone%3D18621019537&amp;table=nickname%3Dxxxx&amp;table=avatar%3Dxxxxx</span><br><span class="line">[DEBUG][2019-12-07T17:15:30.490+0800][http-nio-8081-exec-1:Slf4jLogger.java:72] [RemoteCall#login] ---&gt; END HTTP (209-byte body)</span><br></pre></td></tr></table></figure>
+<p>现在ContentType正确了，可是为什么编码之后的参数不对呢？</p>
+<p><strong>现在碰到了踩的第二个坑：编码之后的参数很奇怪：多了modCount、size和threshold字段，且传入的参数都在table字段后面。</strong></p>
+<h4 id="第二个坑"><a href="#第二个坑" class="headerlink" title="第二个坑"></a>第二个坑</h4><p>根据文档，传给body的参数只需要放在Map中，Feign框架会自动解析到body中，但是现在编码之后的参数怎么看都像是HashMap本身的字段，为什么会出现这种情况呢？</p>
+<p>同样的来源码中找答案吧！</p>
+<p>根据前面的源码分析，我们了解到，每次请求最终都会执行到<code>SynchronousMethodHandler.invoke()</code>中，重新把<code>invoke()</code>方法代码列在下面:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">public Object invoke(Object[] argv) throws Throwable &#123;</span><br><span class="line">  RequestTemplate template = buildTemplateFromArgs.create(argv);</span><br><span class="line">  Options options = findOptions(argv);</span><br><span class="line">  Retryer retryer = this.retryer.clone();</span><br><span class="line">  while (true) &#123;</span><br><span class="line">    try &#123;</span><br><span class="line">      return executeAndDecode(template, options);</span><br><span class="line">    &#125; catch (RetryableException e) &#123;</span><br><span class="line">      // ... 省略重试代码</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>invoke()</code>方法会首先构建<code>RequestTemplate</code>对象，然后发起请求。</p>
+<p>进行编码肯定是发生在发送请求之前，所以肯定是在<code>buildTemplateFromArgs.create()</code>方法中进行的，</p>
+<p><code>create()</code>方法实现如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RequestTemplate <span class="title">create</span><span class="params">(Object[] argv)</span> </span>&#123;</span><br><span class="line">  RequestTemplate mutable = RequestTemplate.from(metadata.template());</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ... 省略部分代码</span></span><br><span class="line">  RequestTemplate template = resolve(argv, mutable, varBuilder);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ... 省略代码</span></span><br><span class="line">  <span class="keyword">return</span> template;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>create()</code>中主要调用<code>resolve()</code>方法完成解析，而<code>resolve()</code>主要是调用<code>BuildEncodedTemplateFromArgs.resolve()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> RequestTemplate <span class="title">resolve</span><span class="params">(Object[] argv,</span></span></span><br><span class="line"><span class="function"><span class="params">                                     RequestTemplate mutable,</span></span></span><br><span class="line"><span class="function"><span class="params">                                     Map&lt;String, Object&gt; variables)</span> </span>&#123;</span><br><span class="line">   <span class="comment">// 找到body参数</span></span><br><span class="line">   Object body = argv[metadata.bodyIndex()];</span><br><span class="line">   checkArgument(body != <span class="keyword">null</span>, <span class="string">"Body parameter %s was null"</span>, metadata.bodyIndex());</span><br><span class="line">   <span class="keyword">try</span> &#123;</span><br><span class="line">     <span class="comment">// 进行编码</span></span><br><span class="line">     encoder.encode(body, metadata.bodyType(), mutable);</span><br><span class="line">   &#125; <span class="keyword">catch</span> (EncodeException e) &#123;</span><br><span class="line">     <span class="keyword">throw</span> e;</span><br><span class="line">   &#125; <span class="keyword">catch</span> (RuntimeException e) &#123;</span><br><span class="line">     <span class="keyword">throw</span> <span class="keyword">new</span> EncodeException(e.getMessage(), e);</span><br><span class="line">   &#125;</span><br><span class="line">   <span class="keyword">return</span> <span class="keyword">super</span>.resolve(argv, mutable, variables);</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>BuildEncodedTemplateFromArgs.resolve()</code>方法中首先会找到属于body的参数，在本例中也就是本文传入的<code>Map&lt;String,String&gt;</code>对象，然后调用<code>encoder.encode()</code>方法。</p>
+<p>在本例的<code>FeignConfiguration</code>中配置了一个<code>encoder</code>:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Encoder <span class="title">feignFormEncoder</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> FormEncoder(<span class="keyword">new</span> SpringEncoder(messageConverters));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>所以最终调用的还是<code>FormEncoder</code>类中的<code>encode()</code>方法，实现如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">encode</span> <span class="params">(Object object, Type bodyType, RequestTemplate template)</span> <span class="keyword">throws</span> EncodeException </span>&#123;</span><br><span class="line">  <span class="comment">// 1.先找到本次请求设置的ContentType类型</span></span><br><span class="line">  String contentTypeValue = getContentTypeValue(template.headers());</span><br><span class="line">  val contentType = ContentType.of(contentTypeValue);</span><br><span class="line">  <span class="keyword">if</span> (!processors.containsKey(contentType)) &#123;</span><br><span class="line">    delegate.encode(object, bodyType, template);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  Map&lt;String, Object&gt; data;</span><br><span class="line">  <span class="comment">// 2. 根据参数的类型，来判断是否应该对参数做进一步处理</span></span><br><span class="line">  <span class="keyword">if</span> (MAP_STRING_WILDCARD.equals(bodyType)) &#123;</span><br><span class="line">    data = (Map&lt;String, Object&gt;) object;</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (isUserPojo(bodyType)) &#123;</span><br><span class="line">    data = toMap(object);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    delegate.encode(object, bodyType, template);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  val charset = getCharset(contentTypeValue);</span><br><span class="line">  processors.get(contentType).process(template, charset, data);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在<code>encode()</code>会根据传入的body参数的类型来判断要不要对参数做进一步处理：</p>
+<ul>
+<li><p>如果bodyType是<code>MAP_STRING_WILDCARD</code>类型，则只是简单的做一个类型转换就好。</p>
+<p><code>MAP_STRING_WILDCARD</code>类型就是表示<code>Map&lt;String,?&gt;</code>类型。在Fegin中，如果参数类型是<code>Map&lt;String,?&gt;</code>，则表示这个参数是要进行表单编码。</p>
+</li>
+<li><p>如果参数的名字不是以”class java.”开头的，则强制转换成<code>Map&lt;String,Object&gt;</code>对象。</p>
+</li>
+<li><p>如果都不是，则直接进行编码操作。</p>
+</li>
+</ul>
+<p>本例中传入的类型是<code>java.util.Map&lt;java.lang.String, java.lang.String&gt;</code>，正好符合第二条，则被调用<code>toMap()</code>方法转换成<code>Map&lt;String,Object&gt;</code>对象了。<br><code>toMap()</code>实现如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Map&lt;String, Object&gt; <span class="title">toMap</span> <span class="params">(@NonNull Object object)</span> </span>&#123;</span><br><span class="line">  val result = <span class="keyword">new</span> HashMap&lt;String, Object&gt;();</span><br><span class="line">  val type = object.getClass();</span><br><span class="line">  val setAccessibleAction = <span class="keyword">new</span> SetAccessibleAction();</span><br><span class="line">  <span class="keyword">for</span> (val field : type.getDeclaredFields()) &#123;</span><br><span class="line">    <span class="comment">//对所有的属性进行遍历</span></span><br><span class="line">    val modifiers = field.getModifiers();</span><br><span class="line">    <span class="comment">// 忽略掉final和static属性</span></span><br><span class="line">    <span class="keyword">if</span> (isFinal(modifiers) || isStatic(modifiers)) &#123;</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    setAccessibleAction.setField(field);</span><br><span class="line">    AccessController.doPrivileged(setAccessibleAction);</span><br><span class="line"></span><br><span class="line">    val fieldValue = field.get(object);</span><br><span class="line">    <span class="keyword">if</span> (fieldValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    val propertyKey = field.isAnnotationPresent(FormProperty.class)</span><br><span class="line">                      ? field.getAnnotation(FormProperty.class).value()</span><br><span class="line">                      : field.getName();</span><br><span class="line"></span><br><span class="line">    result.put(propertyKey, fieldValue);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><strong><code>toMap()</code>会把传入参数的所有的非<code>static</code>和非<code>final</code>类型的变量放入一个Map中，key是属性名，value是属性值。</strong></p>
+<p>在本文中传入的是<code>Map&lt;String,String&gt;</code>类型的Map，而每一个Map中都有<code>modCount</code>、<code>threshold</code>、<code>size</code>这几个属性，且Map中的数据是保存在名为<code>table</code>的数组中的，在经过<code>toMap</code>之后变成了一个新的Map，新的Map中就出现了<code>modCount</code>、<code>threshold</code>、<code>size</code>和<code>table</code>这几个属性，我们原本传入的数据都以数组的形式保存在在key为<code>table</code>的值中。</p>
+<p>所以最终发起请求的时候发出去的<code>body</code>变成了<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">modCount=4&amp;size=4&amp;threshold=12&amp;&amp;table=password%3Dxxxxxx&amp;table=phone%3D18621019537&amp;table=nickname%3Dxxxx&amp;table=avatar%3Dxxxxx</span><br></pre></td></tr></table></figure></p>
+<p>这种。</p>
+<p><strong>修复：只需要把接口定义中的参数类型<code>Map&lt;String,String&gt;换成Map&lt;String,?&gt;</code>就可以了。</strong></p>
+<h4 id="第三个坑"><a href="#第三个坑" class="headerlink" title="第三个坑"></a>第三个坑</h4><p>在使用的过程中，因为要排查问题所以需要打印出http请求的数据，所以需要配置feign打印日志功能。</p>
+<p>按照文档配置(设置<code>Logger.Level=Logger.Level.FULL</code>以及在properties中设置对应的接口<code>logging.level.com.beautyboss.slogen.resource.call.UserCall=DEBUG</code>)之后，日志还是死活打印不出来。</p>
+<p>排查很久之后，才找到原因：<strong>logback中配置的日志打印级别是info，而feign日志只能打印debug级别的，info级别高于debug</strong>，所以导致日志死活打不出来。</p>
+<p>只需要把logback的日志级别设置为debug就可以打印出来了。</p>
+<p>但是问题来了，线上也想要打印出feign日志的话，logback只能设置debug级别，那么线上就会有很多debug的日志，这对线上环境来说是不能接受的。</p>
+<p>那么，怎么样才能即打印出feign的日志，又不影响其他的日志呢？</p>
+<p>简单！只需要在logback的配置文件中新增一个appender和logger，指定日志级别为debug,专门用来打印feign的请求就好了。</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">appender</span> <span class="attr">name</span>=<span class="string">"RPC_FILE"</span> <span class="attr">class</span>=<span class="string">"ch.qos.logback.core.rolling.RollingFileAppender"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">filter</span> <span class="attr">class</span>=<span class="string">"ch.qos.logback.classic.filter.ThresholdFilter"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">level</span>&gt;</span>debug<span class="tag">&lt;/<span class="name">level</span>&gt;</span> // 指定日志级别为debug</span><br><span class="line">    <span class="tag">&lt;/<span class="name">filter</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">file</span>&gt;</span>$&#123;root.log.path&#125;/rpc.log<span class="tag">&lt;/<span class="name">file</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">rollingPolicy</span> <span class="attr">class</span>=<span class="string">"ch.qos.logback.core.rolling.TimeBasedRollingPolicy"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">fileNamePattern</span>&gt;</span>$&#123;root.log.path&#125;/rpc.log.%d&#123;yyyyMMdd&#125;<span class="tag">&lt;/<span class="name">fileNamePattern</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">maxHistory</span>&gt;</span>30<span class="tag">&lt;/<span class="name">maxHistory</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">rollingPolicy</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">encoder</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">pattern</span>&gt;</span>[%level][%d&#123;yyyy-MM-dd'T'HH:mm:ss.SSSZ&#125;][%thread:%file:%line] %msg%n<span class="tag">&lt;/<span class="name">pattern</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">charset</span>&gt;</span>UTF-8<span class="tag">&lt;/<span class="name">charset</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">encoder</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">appender</span>&gt;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;<span class="name">logger</span> <span class="attr">name</span>=<span class="string">"com.beautyboss.slogen.resource.call"</span> <span class="attr">level</span>=<span class="string">"debug"</span> <span class="attr">additivity</span>=<span class="string">"true"</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">appender-ref</span> <span class="attr">ref</span>=<span class="string">"RPC_FILE"</span>/&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">logger</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><p>总的来说，第一次使用feign还是碰到不少问题的。</p>
+<p>对于碰到的问题，不一定要看源码才能解决，比如本例中，发现header设置没有生效，只需要Google下Feign怎么设置header就能解决问题的。</p>
+<p>但是我觉得，作为现代的程序猿，基本上都是框架工程师，大部分的工作都依赖于各种框架。对于自己开发工作中使用到的框架，最好能够做到了然于胸，不要求对框架的具体实现的方方面面都要清楚，最起码要对请求的来龙去脉有所了解。</p>
+<p>要做到知其然，更要知其所以然。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Java/" rel="tag"># Java</a>
+          
+            <a href="/tags/feign/" rel="tag"># feign</a>
+          
+            <a href="/tags/Spring-Cloud/" rel="tag"># Spring Cloud</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/11/10/Java动态编译运行源码/" rel="next" title="Java动态编译运行源码">
+                <i class="fa fa-chevron-left"></i> Java动态编译运行源码
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">25</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">19</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题及排查分析"><span class="nav-number">2.</span> <span class="nav-text">问题及排查分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#第一个坑"><span class="nav-number">2.1.</span> <span class="nav-text">第一个坑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第二个坑"><span class="nav-number">2.2.</span> <span class="nav-text">第二个坑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#第三个坑"><span class="nav-number">2.3.</span> <span class="nav-text">第三个坑</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他"><span class="nav-number">3.</span> <span class="nav-text">其他</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
