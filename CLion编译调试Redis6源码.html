@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content=",">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言之前写过一篇文章CLion调试Redis5源码详细的介绍了如何在CLion中编译调试Redis5的源码。 前几天Redis发布了Redis6-rc1版本。在这个版本中增加了不少新的内容比如新的模块API、ACLS、SSL、RESP3等等。 研究这些新功能的最好的方式是debug对应的源码，本文更新介绍如何在CLion中编译Redis6的源码。 Redis6的下载地址为Redis6源码。 过程在">
+<meta name="keywords" content="Redis">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CLion调试Redis6源码">
+<meta property="og:url" content="http://yoursite.com/CLion编译调试Redis6源码.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="前言之前写过一篇文章CLion调试Redis5源码详细的介绍了如何在CLion中编译调试Redis5的源码。 前几天Redis发布了Redis6-rc1版本。在这个版本中增加了不少新的内容比如新的模块API、ACLS、SSL、RESP3等等。 研究这些新功能的最好的方式是debug对应的源码，本文更新介绍如何在CLion中编译Redis6的源码。 Redis6的下载地址为Redis6源码。 过程在">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-12-26T15:27:17.857Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="CLion调试Redis6源码">
+<meta name="twitter:description" content="前言之前写过一篇文章CLion调试Redis5源码详细的介绍了如何在CLion中编译调试Redis5的源码。 前几天Redis发布了Redis6-rc1版本。在这个版本中增加了不少新的内容比如新的模块API、ACLS、SSL、RESP3等等。 研究这些新功能的最好的方式是debug对应的源码，本文更新介绍如何在CLion中编译Redis6的源码。 Redis6的下载地址为Redis6源码。 过程在">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/CLion编译调试Redis6源码.html">
+
+
+
+
+
+  <title>CLion调试Redis6源码 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+    
+    
+    <div class="post-block page">
+      <header class="post-header">
+
+	<h1 class="post-title" itemprop="name headline">CLion调试Redis6源码</h1>
+
+
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+        
+        
+          <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>之前写过一篇文章<a href="http://slogen.xyz/2019/03/10/CLion%E8%B0%83%E8%AF%95Redis5%E6%BA%90%E7%A0%81/" target="_blank" rel="noopener">CLion调试Redis5源码</a>详细的介绍了如何在CLion中编译调试Redis5的源码。</p>
+<p>前几天Redis发布了Redis6-rc1版本。在这个版本中增加了不少新的内容比如新的模块API、ACLS、SSL、RESP3等等。</p>
+<p>研究这些新功能的最好的方式是debug对应的源码，本文更新介绍如何在CLion中编译Redis6的源码。</p>
+<p>Redis6的下载地址为<a href="https://redis.io/download" target="_blank" rel="noopener">Redis6源码</a>。</p>
+<h3 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h3><p>在CLion中编译Redis6的源码跟编译Redis5的<strong>除了CMakeLists.txt</strong>之外基本没什么区别。</p>
+<h4 id="添加CMakeLists-txt"><a href="#添加CMakeLists-txt" class="headerlink" title="添加CMakeLists.txt"></a>添加<code>CMakeLists.txt</code></h4><ol>
+<li><p>在<code>hiredis</code>根目录下面添加<code>CMakeLists.txt</code>文件，内容如下:</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">add_library(hiredis STATIC</span><br><span class="line">      hiredis.c</span><br><span class="line">      net.c</span><br><span class="line">      dict.c</span><br><span class="line">      sds.c</span><br><span class="line">      async.c</span><br><span class="line">      read.c</span><br><span class="line">      sockcompat.c</span><br><span class="line">      )</span><br></pre></td></tr></table></figure>
+<p> 相对于Redis5增加了<code>sockcompat.c</code>文件。</p>
+</li>
+<li><p>在<code>linenoise</code>根目录下面添加<code>CMakeLists.txt</code>文件，内容如下:</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">add_library(linenoise linenoise.c)</span><br></pre></td></tr></table></figure>
+<p> 跟Redis5保持不变。</p>
+</li>
+<li><p>在<code>lua</code>根目录下面添加<code>CMakeLists.txt</code>文件，内容如下:</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">set(LUA_SRC</span><br><span class="line">       src/lapi.c src/lcode.c src/ldebug.c src/ldo.c src/ldump.c src/lfunc.c</span><br><span class="line">       src/lgc.c src/llex.c src/lmem.c</span><br><span class="line">       src/lobject.c src/lopcodes.c src/lparser.c src/lstate.c src/lstring.c</span><br><span class="line">       src/ltable.c src/ltm.c</span><br><span class="line">       src/lundump.c src/lvm.c src/lzio.c src/strbuf.c src/fpconv.c</span><br><span class="line">       src/lauxlib.c src/lbaselib.c src/ldblib.c src/liolib.c src/lmathlib.c</span><br><span class="line">       src/loslib.c src/ltablib.c</span><br><span class="line">       src/lstrlib.c src/loadlib.c src/linit.c src/lua_cjson.c</span><br><span class="line">       src/lua_struct.c</span><br><span class="line">       src/lua_cmsgpack.c</span><br><span class="line">       src/lua_bit.c</span><br><span class="line">       )</span><br><span class="line"></span><br><span class="line">add_library(lua STATIC $&#123;LUA_SRC&#125;)</span><br></pre></td></tr></table></figure>
+<p> 跟Redis5保持不变。</p>
+</li>
+<li><p>在<code>deps</code>根目录下面添加<code>CMakeLists.txt</code>文件，内容如下:</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">add_subdirectory(hiredis)</span><br><span class="line">add_subdirectory(linenoise)</span><br><span class="line">add_subdirectory(lua)</span><br></pre></td></tr></table></figure>
+<p> 跟Redis5保持不变。</p>
+</li>
+<li><p>在<code>src/modules</code>根目录下面添加<code>CMakeLists.txt</code>文件，内容如下:</p>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">cmake_minimum_required(VERSION 3.9)</span><br><span class="line">set(CMAKE_BUILD_TYPE &quot;Debug&quot;)</span><br><span class="line">add_library(helloworld SHARED helloworld.c)</span><br><span class="line">set_target_properties(helloworld PROPERTIES PREFIX &quot;&quot; SUFFIX &quot;.so&quot;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">add_library(hellotype SHARED hellotype.c)</span><br><span class="line">set_target_properties(hellotype PROPERTIES PREFIX &quot;&quot; SUFFIX &quot;.so&quot;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">add_library(helloblock SHARED helloblock.c)</span><br><span class="line">set_target_properties(helloblock PROPERTIES PREFIX &quot;&quot; SUFFIX &quot;.so&quot;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">add_library(testmodule SHARED testmodule.c)</span><br><span class="line">set_target_properties(testmodule PROPERTIES PREFIX &quot;&quot; SUFFIX &quot;.so&quot;)</span><br></pre></td></tr></table></figure>
+<p> 跟Redis5保持不变。</p>
+</li>
+<li><p>在<code>redis</code>根目录中</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br></pre></td><td class="code"><pre><span class="line">cmake_minimum_required(VERSION 3.0 FATAL_ERROR)</span><br><span class="line">project(redis VERSION 4.0)</span><br><span class="line">set(CMAKE_BUILD_TYPE &quot;Debug&quot;)</span><br><span class="line">get_filename_component(REDIS_ROOT &quot;$&#123;CMAKE_CURRENT_SOURCE_DIR&#125;&quot; ABSOLUTE)</span><br><span class="line"></span><br><span class="line">add_subdirectory(deps)</span><br><span class="line">add_subdirectory(src/modules)</span><br><span class="line">set(SRC_SERVER_TMP</span><br><span class="line">        src/acl.c</span><br><span class="line">        src/adlist.c</span><br><span class="line">        src/ae.c</span><br><span class="line">        src/ae_kqueue.c</span><br><span class="line">        src/anet.c</span><br><span class="line">        src/aof.c</span><br><span class="line">        src/bio.c</span><br><span class="line">        src/bitops.c</span><br><span class="line">        src/blocked.c</span><br><span class="line">        src/childinfo.c</span><br><span class="line">        src/cluster.c</span><br><span class="line">        src/config.c</span><br><span class="line">        src/connection.c</span><br><span class="line">        src/crc16.c</span><br><span class="line">        src/crc64.c</span><br><span class="line">        src/db.c</span><br><span class="line">        src/debug.c</span><br><span class="line">        src/defrag.c</span><br><span class="line">        src/dict.c</span><br><span class="line">        src/endianconv.c</span><br><span class="line">        src/evict.c</span><br><span class="line">        src/expire.c</span><br><span class="line">        src/geo.c</span><br><span class="line">        src/geohash.c</span><br><span class="line">        src/geohash_helper.c</span><br><span class="line">        src/gopher.c</span><br><span class="line">        src/hyperloglog.c</span><br><span class="line">        src/intset.c</span><br><span class="line">        src/latency.c</span><br><span class="line">        src/lazyfree.c</span><br><span class="line">        src/listpack.c</span><br><span class="line">        src/localtime.c</span><br><span class="line">        src/lolwut.c</span><br><span class="line">        src/lolwut5.c</span><br><span class="line">        src/lolwut6.c</span><br><span class="line">        src/lzf_c.c</span><br><span class="line">        src/lzf_d.c</span><br><span class="line">        src/memtest.c</span><br><span class="line">        src/module.c</span><br><span class="line">        src/multi.c</span><br><span class="line">        src/networking.c</span><br><span class="line">        src/notify.c</span><br><span class="line">        src/object.c</span><br><span class="line">        src/pqsort.c</span><br><span class="line">        src/pubsub.c</span><br><span class="line">        src/quicklist.c</span><br><span class="line">        src/rand.c</span><br><span class="line">        src/rax.c</span><br><span class="line">        src/rdb.c</span><br><span class="line">        src/redis-check-aof.c</span><br><span class="line">        src/redis-check-rdb.c</span><br><span class="line">        src/release.c</span><br><span class="line">        src/replication.c</span><br><span class="line">        src/rio.c</span><br><span class="line">        src/scripting.c</span><br><span class="line">        src/sds.c</span><br><span class="line">        src/sentinel.c</span><br><span class="line">        src/setproctitle.c</span><br><span class="line">        src/sha1.c</span><br><span class="line">        src/sha256.c</span><br><span class="line">        src/siphash.c</span><br><span class="line">        src/slowlog.c</span><br><span class="line">        src/sort.c</span><br><span class="line">        src/sparkline.c</span><br><span class="line">        src/syncio.c</span><br><span class="line">        src/t_hash.c</span><br><span class="line">        src/t_list.c</span><br><span class="line">        src/t_set.c</span><br><span class="line">        src/t_stream.c</span><br><span class="line">        src/t_string.c</span><br><span class="line">        src/t_zset.c</span><br><span class="line">        src/tls.c</span><br><span class="line">        src/tracking.c</span><br><span class="line">        src/util.c</span><br><span class="line">        src/ziplist.c</span><br><span class="line">        src/zipmap.c</span><br><span class="line">        src/zmalloc.c</span><br><span class="line">        )</span><br><span class="line">set(SRC_SERVER src/server.c $&#123;SRC_SERVER_TMP&#125;)</span><br><span class="line">set(SRC_CLI</span><br><span class="line">        src/anet.c</span><br><span class="line">        src/sds.c</span><br><span class="line">        src/adlist.c</span><br><span class="line">        src/redis-cli.c</span><br><span class="line">        src/zmalloc.c</span><br><span class="line">        src/release.c</span><br><span class="line">        src/anet.c</span><br><span class="line">        src/ae.c</span><br><span class="line">        src/crc64.c</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">set(EXECUTABLE_OUTPUT_PATH src)</span><br><span class="line">link_directories(deps/linenoise/ deps/lua/src deps/hiredis)</span><br><span class="line"></span><br><span class="line">add_executable(redis-server $&#123;SRC_SERVER&#125;)</span><br><span class="line">target_include_directories(redis-server</span><br><span class="line">        PRIVATE $&#123;REDIS_ROOT&#125;/deps/linenoise</span><br><span class="line">        PRIVATE $&#123;REDIS_ROOT&#125;/deps/hiredis</span><br><span class="line">        PRIVATE $&#123;REDIS_ROOT&#125;/deps/lua/src)</span><br><span class="line">target_link_libraries(redis-server</span><br><span class="line">        PRIVATE pthread</span><br><span class="line">        PRIVATE m</span><br><span class="line">        PRIVATE lua</span><br><span class="line">        PRIVATE linenoise</span><br><span class="line">        PRIVATE hiredis)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">add_executable(redis-cli $&#123;SRC_CLI&#125;)</span><br><span class="line">target_include_directories(redis-cli</span><br><span class="line">        PRIVATE $&#123;REDIS_ROOT&#125;/deps/linenoise</span><br><span class="line">        PRIVATE $&#123;REDIS_ROOT&#125;/deps/hiredis</span><br><span class="line">        PRIVATE $&#123;REDIS_ROOT&#125;/deps/lua/src)</span><br><span class="line"></span><br><span class="line">target_link_libraries(redis-cli</span><br><span class="line">        PRIVATE pthread</span><br><span class="line">        PRIVATE m</span><br><span class="line">        PRIVATE linenoise</span><br><span class="line">        PRIVATE hiredis</span><br><span class="line">        )</span><br></pre></td></tr></table></figure>
+<p>跟Redis5相比主要增加了</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">src/acl.c</span><br><span class="line">src/connection.c</span><br><span class="line">src/gopher.c</span><br><span class="line">src/lolwut6.c</span><br><span class="line">src/sha256.c</span><br><span class="line">src/tls.c</span><br><span class="line">src/tracking.c</span><br></pre></td></tr></table></figure>
+<p>这几个文件。</p>
+</li>
+</ol>
+<h4 id="解决报错"><a href="#解决报错" class="headerlink" title="解决报错"></a>解决报错</h4><p>同编译Redis5。</p>
+
+        
+      </div>
+      
+      
+      
+    </div>
+    
+    
+    
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">25</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">19</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#过程"><span class="nav-number">2.</span> <span class="nav-text">过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#添加CMakeLists-txt"><span class="nav-number">2.1.</span> <span class="nav-text">添加CMakeLists.txt</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#解决报错"><span class="nav-number">2.2.</span> <span class="nav-text">解决报错</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
