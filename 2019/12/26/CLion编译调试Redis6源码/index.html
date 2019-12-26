@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content=",">
+  <meta name="keywords" content="Redis,">
 
 
 
@@ -81,9 +81,9 @@
 
 <meta name="description" content="前言之前写过一篇文章CLion调试Redis5源码详细的介绍了如何在CLion中编译调试Redis5的源码。 前几天Redis发布了Redis6-rc1版本。在这个版本中增加了不少新的内容比如新的模块API、ACLS、SSL、RESP3等等。 研究这些新功能的最好的方式是debug对应的源码，本文更新介绍如何在CLion中编译Redis6的源码。 Redis6的下载地址为Redis6源码。 过程在">
 <meta name="keywords" content="Redis">
-<meta property="og:type" content="website">
+<meta property="og:type" content="article">
 <meta property="og:title" content="CLion调试Redis6源码">
-<meta property="og:url" content="http://yoursite.com/CLion编译调试Redis6源码.html">
+<meta property="og:url" content="http://yoursite.com/2019/12/26/CLion编译调试Redis6源码/index.html">
 <meta property="og:site_name" content="天凉好个秋">
 <meta property="og:description" content="前言之前写过一篇文章CLion调试Redis5源码详细的介绍了如何在CLion中编译调试Redis5的源码。 前几天Redis发布了Redis6-rc1版本。在这个版本中增加了不少新的内容比如新的模块API、ACLS、SSL、RESP3等等。 研究这些新功能的最好的方式是debug对应的源码，本文更新介绍如何在CLion中编译Redis6的源码。 Redis6的下载地址为Redis6源码。 过程在">
 <meta property="og:locale" content="zh-Hans">
@@ -120,7 +120,7 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/CLion编译调试Redis6源码.html">
+  <link rel="canonical" href="http://yoursite.com/2019/12/26/CLion编译调试Redis6源码/">
 
 
 
@@ -251,24 +251,118 @@
 
   <div id="posts" class="posts-expand">
     
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/12/26/CLion编译调试Redis6源码/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
     
-    
-    <div class="post-block page">
       <header class="post-header">
 
-	<h1 class="post-title" itemprop="name headline">CLion调试Redis6源码</h1>
-
-
-
-</header>
-
-      
-      
-      
-      <div class="post-body">
         
         
-          <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>之前写过一篇文章<a href="http://slogen.xyz/2019/03/10/CLion%E8%B0%83%E8%AF%95Redis5%E6%BA%90%E7%A0%81/" target="_blank" rel="noopener">CLion调试Redis5源码</a>详细的介绍了如何在CLion中编译调试Redis5的源码。</p>
+          <h1 class="post-title" itemprop="name headline">CLion调试Redis6源码</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-12-26T22:52:48+08:00">
+                2019-12-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index">
+                    <span itemprop="name">Redis</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2019/12/26/CLion编译调试Redis6源码/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/12/26/CLion编译调试Redis6源码/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>之前写过一篇文章<a href="http://slogen.xyz/2019/03/10/CLion%E8%B0%83%E8%AF%95Redis5%E6%BA%90%E7%A0%81/" target="_blank" rel="noopener">CLion调试Redis5源码</a>详细的介绍了如何在CLion中编译调试Redis5的源码。</p>
 <p>前几天Redis发布了Redis6-rc1版本。在这个版本中增加了不少新的内容比如新的模块API、ACLS、SSL、RESP3等等。</p>
 <p>研究这些新功能的最好的方式是debug对应的源码，本文更新介绍如何在CLion中编译Redis6的源码。</p>
 <p>Redis6的下载地址为<a href="https://redis.io/download" target="_blank" rel="noopener">Redis6源码</a>。</p>
@@ -303,15 +397,89 @@
 </ol>
 <h4 id="解决报错"><a href="#解决报错" class="headerlink" title="解决报错"></a>解决报错</h4><p>同编译Redis5。</p>
 
-        
-      </div>
-      
-      
       
     </div>
     
     
     
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Redis/" rel="tag"># Redis</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/12/05/初次使用Feign踩的一些坑/" rel="next" title="Feign源码分析:记初次使用Feign踩的一些坑">
+                <i class="fa fa-chevron-left"></i> Feign源码分析:记初次使用Feign踩的一些坑
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
   </div>
 
 
@@ -374,7 +542,7 @@
               
                 <a href="/archives">
               
-                  <span class="site-state-item-count">25</span>
+                  <span class="site-state-item-count">26</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
