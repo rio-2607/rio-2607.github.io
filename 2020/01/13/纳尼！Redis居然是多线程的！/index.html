@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Redis,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景众所周知，作为目前使用的最多的内存型数据库之一的Redis，使用单线程(这里的单线程是指Redis用来接收网络请求、处理请求、返回结果这一过程中使用了一个线程)就能够最高抗住五十万的qps，其性能是非常之高。 至于为啥Redis单线程就能有这么高的性能，网上有很多文章写了，本文就不多讲。 之前Redis社区也经常提及多线程特性，但是直到最近发布的Redis6-rc1版本才实现了多线程版本。 网">
+<meta name="keywords" content="Redis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="纳尼！Redis居然是多线程的！">
+<meta property="og:url" content="http://yoursite.com/2020/01/13/纳尼！Redis居然是多线程的！/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="背景众所周知，作为目前使用的最多的内存型数据库之一的Redis，使用单线程(这里的单线程是指Redis用来接收网络请求、处理请求、返回结果这一过程中使用了一个线程)就能够最高抗住五十万的qps，其性能是非常之高。 至于为啥Redis单线程就能有这么高的性能，网上有很多文章写了，本文就不多讲。 之前Redis社区也经常提及多线程特性，但是直到最近发布的Redis6-rc1版本才实现了多线程版本。 网">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://i.loli.net/2020/01/14/pBx18XEdIjGR92Q.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/01/14/oFkitCQmPnhSGYM.jpg">
+<meta property="og:image" content="https://i.loli.net/2020/01/13/ntWSHzr69ayZQAc.png">
+<meta property="og:image" content="https://i.loli.net/2020/01/14/cw94IrL8p3VKF5Z.png">
+<meta property="og:updated_time" content="2020-01-14T14:13:14.982Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="纳尼！Redis居然是多线程的！">
+<meta name="twitter:description" content="背景众所周知，作为目前使用的最多的内存型数据库之一的Redis，使用单线程(这里的单线程是指Redis用来接收网络请求、处理请求、返回结果这一过程中使用了一个线程)就能够最高抗住五十万的qps，其性能是非常之高。 至于为啥Redis单线程就能有这么高的性能，网上有很多文章写了，本文就不多讲。 之前Redis社区也经常提及多线程特性，但是直到最近发布的Redis6-rc1版本才实现了多线程版本。 网">
+<meta name="twitter:image" content="https://i.loli.net/2020/01/14/pBx18XEdIjGR92Q.jpg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2020/01/13/纳尼！Redis居然是多线程的！/">
+
+
+
+
+
+  <title>纳尼！Redis居然是多线程的！ | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/01/13/纳尼！Redis居然是多线程的！/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">纳尼！Redis居然是多线程的！</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-01-13T13:18:14+08:00">
+                2020-01-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index">
+                    <span itemprop="name">Redis</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/01/13/纳尼！Redis居然是多线程的！/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/01/13/纳尼！Redis居然是多线程的！/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>众所周知，作为目前使用的最多的内存型数据库之一的Redis，使用单线程(这里的单线程是指Redis用来接收网络请求、处理请求、返回结果这一过程中使用了一个线程)就能够最高抗住五十万的qps，其性能是非常之高。</p>
+<p>至于为啥Redis单线程就能有这么高的性能，网上有很多文章写了，本文就不多讲。</p>
+<p>之前Redis社区也经常提及多线程特性，但是直到最近发布的Redis6-rc1版本才实现了多线程版本。</p>
+<p>网上有同学对Redis多线程和单线程版本进行了性能测试，对比显示，Redis的多线程版本性能至少比单线程版本提高了50%。</p>
+<p><img src="https://i.loli.net/2020/01/14/pBx18XEdIjGR92Q.jpg" alt="1.jpg"><br><img src="https://i.loli.net/2020/01/14/oFkitCQmPnhSGYM.jpg" alt="2.jpg"></p>
+<p>本文就来深度剖析下Redis6里面的多线程实现原理。</p>
+<h3 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h3><h4 id="Redis5单线程实现"><a href="#Redis5单线程实现" class="headerlink" title="Redis5单线程实现"></a>Redis5单线程实现</h4><p>在分析Redis6里面的多线程实现之前，先来简要看一下Redis6之前的单线程版本中命令的执行过程。</p>
+<p>在客户端与Redis服务器建立连接之后，所有的请求都会执行到<code>readQueryFromClient()</code>方法中，<code>readQueryFromClient()</code>方法会从<code>socket</code>中读取数据放到输入缓冲区<code>querybuf</code>中，接着会调用<code>processInputBuffer()</code>(实际上<code>readQueryFromClient()</code>是调用的<code>processInputBufferAndReplicate()</code>，而在<code>processInputBufferAndReplicate()</code>中又调用了<code>processInputBuffer()</code>)方法按照RESP协议来解析参数。解析完参数之后会调用<code>processCommand()</code>方法执行具体的命令。在<code>processCommand()</code>中根据命令名称找到对应的命令并调用命令的<code>call()</code>完成具体的操作，命令在执行完成之后都会调用<code>addReply()</code>方法返回执行结果。</p>
+<p>但是这里需要注意的是<code>addReply()</code>方法只是把返回的数据写入到输出缓冲区<code>client-&gt;buf</code>或者<code>client-&gt;reply</code>中，并不执行实际的网络发送操作。</p>
+<p>Redis在每次进入事件循环之前，都会先调用<code>beforeSleep()</code>方法，实际的网络发送数据操作时在<code>beforeSleep()</code>方法中完成的。</p>
+<p><code>beforeSleep()</code>中会调用<code>handleClientsWithPendingWrites()</code>返回数据给客户端：<code>handleClientsWithPendingWrites()</code>中会调用<code>writeToClient()</code>方法把输出缓冲区<code>client-&gt;buf</code>和<code>client-&gt;reply</code>中的数据通过socket发送给客户端。</p>
+<p>流程图如下所示：</p>
+<p><img src="https://i.loli.net/2020/01/13/ntWSHzr69ayZQAc.png" alt="redis.png"></p>
+<p>Redis6为了支持多线程，又会做什么改变呢？</p>
+<p>别急，且听我娓娓道来！</p>
+<h4 id="Redis6多线程实现"><a href="#Redis6多线程实现" class="headerlink" title="Redis6多线程实现"></a>Redis6多线程实现</h4><p>首先，在<code>main()</code>方法中会调用<code>InitServerLast()</code>方法，<code>InitServerLast()</code>方法中会调用<code>initThreadedIO()</code>方法，从方法名中就可以看出来，这个方法的主要作用是初始化IO线程。</p>
+<blockquote>
+<p>initThreadedIO</p>
+</blockquote>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">initThreadedIO</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 设置标志位，表示io线程还没有激活</span></span><br><span class="line">    io_threads_active = <span class="number">0</span>; <span class="comment">/* We start with threads not active. */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/*如果设置的io线程数量为1，则不启动多余的io线程，只使用主线程*/</span></span><br><span class="line">    <span class="keyword">if</span> (server.io_threads_num == <span class="number">1</span>) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (server.io_threads_num &gt; IO_THREADS_MAX_NUM) &#123;</span><br><span class="line">        serverLog(LL_WARNING,<span class="string">"Fatal: too many I/O threads configured. "</span></span><br><span class="line">                             <span class="string">"The maximum number is %d."</span>, IO_THREADS_MAX_NUM);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Spawn the I/O threads. */</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; server.io_threads_num; i++) &#123;</span><br><span class="line">        <span class="keyword">pthread_t</span> tid;</span><br><span class="line">        pthread_mutex_init(&amp;io_threads_mutex[i],<span class="literal">NULL</span>);</span><br><span class="line">        io_threads_pending[i] = <span class="number">0</span>;</span><br><span class="line">        io_threads_list[i] = listCreate();</span><br><span class="line">        <span class="comment">// 当前线程(主线程)会先锁定所有的互斥锁</span></span><br><span class="line">        pthread_mutex_lock(&amp;io_threads_mutex[i]); <span class="comment">/* Thread will be stopped. */</span></span><br><span class="line">        <span class="comment">// 生成新的io线程，每个io线程执行IOThreadMain()方法，方法参数是当前索引</span></span><br><span class="line">        <span class="keyword">if</span> (pthread_create(&amp;tid,<span class="literal">NULL</span>,IOThreadMain,(<span class="keyword">void</span>*)(<span class="keyword">long</span>)i) != <span class="number">0</span>) &#123;</span><br><span class="line">            serverLog(LL_WARNING,<span class="string">"Fatal: Can't initialize IO thread."</span>);</span><br><span class="line">            <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        io_threads[i] = tid;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>initThreadedIO()</code>方法主要完成下面几件事:</p>
+<ol>
+<li>初始化IO线程标志位<code>io_threads_active</code>为0，即表示IO线程还未激活。1表示已激活。</li>
+<li><p>校验<code>io_threads_num</code>。</p>
+<p> <code>io_threads_num</code>表示用户设置的要开启的io线程的数量。如果<code>io_threads_num=0</code>则表示用户不需要开启多余的IO线程，直接使用主线程进行IO。IO线程数最大不超过128。</p>
+</li>
+<li><p>初始化指定数量的线程以及对应的互斥锁。</p>
+<p> Redis把所有的IO线程保存在数组<code>io_threads</code>中，每个线程都对应着一个互斥锁，这些互斥锁保存在<code>io_threads_mutex</code>数组中。</p>
+<p> 每个IO线程都会对应着一个任务列表，任务列表中保存着对应线程需要处理的client对象。这些任务列表保存在<code>io_threads_list</code>数组中。</p>
+<p> 同时Redis会记录每个IO线程对应的队列中需要处理的client对象的个数，这些个数保存在<code>io_threads_pending</code>数组中。</p>
+<p> Redis主线程在生成具体的线程之前会先初始化互斥锁并且获取所有的互斥锁，为什么会这么做呢？后面再分析。</p>
+<p> 生成IO线程的时候传入了<code>IOThreadMain</code>函数指针，说明每个IO线程都是执行<code>IOThreadMain()</code>方法。<code>IOThreadMain</code>方法的参数是对应的线程在<code>io_threads</code>数组中的下标索引。</p>
+</li>
+</ol>
+<p><code>initThreadedIO()</code>方法执行完成之后，<code>io_threads_num</code>个的IO线程已经启动了，且执行的是<code>IOThreadMain()</code>方法，那么我们继续来看下<code>IOThreadMain()()</code>方法。</p>
+<blockquote>
+<p>IOThreadMain</p>
+</blockquote>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">IOThreadMain</span><span class="params">(<span class="keyword">void</span> *myid)</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* The ID is the thread number (from 0 to server.iothreads_num-1), and is</span></span><br><span class="line"><span class="comment">     * used by the thread to just manipulate a single sub-array of clients. */</span></span><br><span class="line">    <span class="comment">// 首先获取当前线程在io_threads数组中的下标，在io_threads_pending和io_threads_list中的下标是一致的</span></span><br><span class="line">    <span class="keyword">long</span> id = (<span class="keyword">unsigned</span> <span class="keyword">long</span>)myid;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="comment">/* Wait for start */</span></span><br><span class="line">        <span class="comment">// 先自旋一会，如果自旋期间当前线程被分配了任务的话就可以不用抢夺互斥锁</span></span><br><span class="line">        <span class="comment">// 可以提高性能</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">1000000</span>; j++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (io_threads_pending[id] != <span class="number">0</span>) <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* Give the main thread a chance to stop this thread. */</span></span><br><span class="line">        <span class="keyword">if</span> (io_threads_pending[id] == <span class="number">0</span>) &#123;</span><br><span class="line">            pthread_mutex_lock(&amp;io_threads_mutex[id]);</span><br><span class="line">            pthread_mutex_unlock(&amp;io_threads_mutex[id]);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        serverAssert(io_threads_pending[id] != <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (tio_debug) <span class="built_in">printf</span>(<span class="string">"[%ld] %d to handle\n"</span>, id, (<span class="keyword">int</span>)listLength(io_threads_list[id]));</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* Process: note that the main thread will never touch our list</span></span><br><span class="line"><span class="comment">         * before we drop the pending count to 0. */</span></span><br><span class="line">        listIter li;</span><br><span class="line">        listNode *ln;</span><br><span class="line">        listRewind(io_threads_list[id],&amp;li);</span><br><span class="line">        <span class="keyword">while</span>((ln = listNext(&amp;li))) &#123;</span><br><span class="line">            client *c = listNodeValue(ln);</span><br><span class="line">            <span class="comment">// 从io_threads_list列表中获取任务</span></span><br><span class="line">            <span class="comment">// 如果是写任务，则进行写操作</span></span><br><span class="line">            <span class="comment">// 如果是读任务，则进行读操作</span></span><br><span class="line">            <span class="keyword">if</span> (io_threads_op == IO_THREADS_OP_WRITE) &#123;</span><br><span class="line">                writeToClient(c,<span class="number">0</span>);</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (io_threads_op == IO_THREADS_OP_READ) &#123;</span><br><span class="line">                readQueryFromClient(c-&gt;conn);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                serverPanic(<span class="string">"io_threads_op value is unknown"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        listEmpty(io_threads_list[id]);</span><br><span class="line">        io_threads_pending[id] = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (tio_debug) <span class="built_in">printf</span>(<span class="string">"[%ld] Done\n"</span>, id);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>IOThreadMain()</code>在一个死循环中完成下面几件事：</p>
+<ol>
+<li><p>判断当前线程有没有被分配新的任务。</p>
+<p> 那么怎么判断呢？是通过共享数组<code>io_threads_pending</code>来实现。</p>
+<p> 前面说了，<code>io_threads_pending</code>数组保存的是每个线程被分配的任务client对象的个数。如果<code>io_threads_pending&gt;0</code>，则表示有新的任务需要处理。</p>
+<p> 那么什么时候会进行任务分配呢？谁来进行呢？这个后面会分析。这里先给出答案：由主线程来进行分配。</p>
+<p> 在判断<code>io_threads_pending[id]</code>(<code>id</code>是当前线程在数组中的索引)是否大于0的时候，IO线程会先自旋一会。这样做的一个好处就是如果IO线程在自旋期间主线程就给当前线程分配了任务的话，io线程就不会去抢夺互斥锁。节省了抢夺互斥锁的开销(这个开销还挺大的)。</p>
+<p> 如果自旋之后还没有任务分配，IO线程则会调用<code>pthread_mutex_lock()</code>方法来抢夺对应的互斥锁。</p>
+<p> 之前提到过在<code>initThreadedIO()</code>方法中主线程在生成具体的IO线程之前会先调用<code>pthread_mutex_lock()</code>把所有的互斥锁给锁上。所以IO线程此时会因为抢锁失败处于阻塞状态。</p>
+<p> 这里有一点需要注意的是：<strong>主线程和IO线程通过共享变量数组<code>io_threads_pending</code>来进行通信</strong>。主线程修改<code>io_threads_pending</code>，IO线程读取<code>io_threads_pending</code>，那么就有可能存在线程安全问题。</p>
+<p> 那么Redis是怎么避免线程安全问题的呢？答案是通过<code>_Atomic</code>限定符。</p>
+<p> <code>io_threads_pending</code>变量在声明的时候加上了<code>_Atomic</code>限定符：<br> <code>_Atomic unsigned long io_threads_pending[IO_THREADS_MAX_NUM];</code><br> <code>_Atomic</code>是C11标准中引入的原子操作：被<code>_Atomic</code>修饰的变量被认为是原子变量，对原子变量的操作是不可分割的(Atomicity)，且操作结果对其他线程可见，执行的顺序也不能被重排。<br> 所以<code>io_threads_pending</code>是属于线程安全的变量。</p>
+</li>
+<li><p>执行具体的读操作或者写操作。</p>
+<p> 在判断被分配到读写任务之后。IO线程就会进行具体的读写操作。</p>
+<p> 每个IO线程都会遍历自己的任务队列(在<code>io_threads_list[id]</code>中),对队列中的每一个client对象执行具体的读写操作。</p>
+<p> 变量<code>io_threads_op</code>标识当前线程需要进行的操作：如果是<code>IO_THREADS_OP_WRITE</code>，表示写操作，则所有的IO线程都会调用<code>writeToClient()</code>方法把各个client对象的输出缓冲区的数据通过socket返回给客户端，<code>IO_THREADS_OP_READ</code>表示读操作。所有的IO线程都会调用<code>readQueryFromClient()</code>方法读取客户端的请求。</p>
+<p> 这里有一点需要注意的是：<strong>所有的IO线程，只会同时进行读操作或者进行写操作。</strong></p>
+</li>
+</ol>
+<blockquote>
+<p>handleClientsWithPendingWritesUsingThreads</p>
+</blockquote>
+<p>Redis在每次事件循环开始前都会先调用<code>beforeSleep()</code>方法，在<code>beforeSleep()</code>方法中会调用<code>handleClientsWithPendingWritesUsingThreads()</code>方法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">handleClientsWithPendingWritesUsingThreads</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 1. 判断是否还有client对象需要写数据给客户端</span></span><br><span class="line">    <span class="keyword">int</span> processed = listLength(server.clients_pending_write);</span><br><span class="line">    <span class="keyword">if</span> (processed == <span class="number">0</span>) <span class="keyword">return</span> <span class="number">0</span>; <span class="comment">/* Return ASAP if there are no clients. */</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* If we have just a few clients to serve, don't use I/O threads, but the</span></span><br><span class="line"><span class="comment">     * boring synchronous code. */</span></span><br><span class="line">    <span class="comment">// 2. 判断是否的确需要使用多IO线程进行数据读写</span></span><br><span class="line">    <span class="keyword">if</span> (stopThreadedIOIfNeeded()) &#123;</span><br><span class="line">        <span class="keyword">return</span> handleClientsWithPendingWrites();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Start threads if needed. */</span></span><br><span class="line">    <span class="comment">// 3. 如果IO线程没有激活的话则开启IO线程</span></span><br><span class="line">    <span class="keyword">if</span> (!io_threads_active) startThreadedIO();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tio_debug) <span class="built_in">printf</span>(<span class="string">"%d TOTAL WRITE pending clients\n"</span>, processed);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Distribute the clients across N different lists. */</span></span><br><span class="line">    listIter li;</span><br><span class="line">    listNode *ln;</span><br><span class="line">    listRewind(server.clients_pending_write,&amp;li);</span><br><span class="line">    <span class="keyword">int</span> item_id = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 4.按照RoundRobin算法把需要返回数据的client对象分配给IO线程</span></span><br><span class="line">    <span class="keyword">while</span>((ln = listNext(&amp;li))) &#123;</span><br><span class="line">        client *c = listNodeValue(ln);</span><br><span class="line">        c-&gt;flags &amp;= ~CLIENT_PENDING_WRITE;</span><br><span class="line">        <span class="keyword">int</span> target_id = item_id % server.io_threads_num;</span><br><span class="line">        listAddNodeTail(io_threads_list[target_id],c);</span><br><span class="line">        item_id++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Give the start condition to the waiting threads, by setting the</span></span><br><span class="line"><span class="comment">     * start condition atomic var. */</span></span><br><span class="line">    <span class="comment">// 5. 设置标志位为写操作，统计各个io线程需要处理的client的个数</span></span><br><span class="line">    io_threads_op = IO_THREADS_OP_WRITE;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; server.io_threads_num; j++) &#123;</span><br><span class="line">        <span class="keyword">int</span> count = listLength(io_threads_list[j]);</span><br><span class="line">        io_threads_pending[j] = count;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Wait for all threads to end their work. */</span></span><br><span class="line">    <span class="comment">// 6. 空循环等待所有的IO线程完成IO读写</span></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">long</span> pending = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; server.io_threads_num; j++)</span><br><span class="line">            pending += io_threads_pending[j];</span><br><span class="line">        <span class="keyword">if</span> (pending == <span class="number">0</span>) <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (tio_debug) <span class="built_in">printf</span>(<span class="string">"I/O WRITE All threads finshed\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Run the list of clients again to install the write handler where</span></span><br><span class="line"><span class="comment">     * needed. */</span></span><br><span class="line">    <span class="comment">// 7. 如果还有数据没有写完的话则继续处理</span></span><br><span class="line">    listRewind(server.clients_pending_write,&amp;li);</span><br><span class="line">    <span class="keyword">while</span>((ln = listNext(&amp;li))) &#123;</span><br><span class="line">        client *c = listNodeValue(ln);</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* Install the write handler if there are pending writes in some</span></span><br><span class="line"><span class="comment">         * of the clients. */</span></span><br><span class="line">        <span class="keyword">if</span> (clientHasPendingReplies(c) &amp;&amp;</span><br><span class="line">                connSetWriteHandler(c-&gt;conn, sendReplyToClient) == AE_ERR)</span><br><span class="line">        &#123;</span><br><span class="line">            freeClientAsync(c);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 8. 清空需要写数据的client对象列表</span></span><br><span class="line">    listEmpty(server.clients_pending_write);</span><br><span class="line">    <span class="keyword">return</span> processed;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>handleClientsWithPendingWritesUsingThreads()</code>主要完成下面几个操作：</p>
+<ol>
+<li><p>判断当前需要返回数据给客户端的client对象(Redis把需要返回数据的client对象保存在<code>server.clients_pending_write</code>列表中)的个数。如果没有需要处理的client对象则直接返回。</p>
+</li>
+<li><p>判断是否有必要使用多IO线程进行数据处理。</p>
+<p> Redis会调用<code>stopThreadedIOIfNeeded()</code>方法来判断是否的确需要时使用多IO线程，判断的依据是：当前需要处理的Client对象的数量超过了两倍的IO线程数量。如果没有的话则不会使用多IO线程，即使IO线程已经激活了也会先关闭(并非把线程给关了，只是把对应的互斥锁给锁上了，以及设置激活标志位<code>io_threads_active=0</code>)</p>
+ <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">stopThreadedIOIfNeeded</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> pending = listLength(server.clients_pending_write);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Return ASAP if IO threads are disabled (single threaded mode). */</span></span><br><span class="line">    <span class="keyword">if</span> (server.io_threads_num == <span class="number">1</span>) <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 只要当前需要处理的client对象的数量超过两倍的IO线程的数量的情况下才会使用多线程</span></span><br><span class="line">    <span class="keyword">if</span> (pending &lt; (server.io_threads_num*<span class="number">2</span>)) &#123;</span><br><span class="line">        <span class="keyword">if</span> (io_threads_active) stopThreadedIO();</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 如果判断出不需要使用多IO线程，则依然是由主线程调用<code>handleClientsWithPendingWrites()</code>方法完成数据的返回操作。</p>
+</li>
+<li><p>如果需要使用多IO线程且IO线程还没激活的情况下则调用<code>startThreadedIO()</code>激活IO线程。</p>
+ <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">startThreadedIO</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (tio_debug) &#123; <span class="built_in">printf</span>(<span class="string">"S"</span>); fflush(<span class="built_in">stdout</span>); &#125;</span><br><span class="line">    <span class="keyword">if</span> (tio_debug) <span class="built_in">printf</span>(<span class="string">"--- STARTING THREADED IO ---\n"</span>);</span><br><span class="line">    serverAssert(io_threads_active == <span class="number">0</span>);</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; server.io_threads_num; j++)</span><br><span class="line">        <span class="comment">// 把所有的互斥锁给释放掉</span></span><br><span class="line">        pthread_mutex_unlock(&amp;io_threads_mutex[j]);</span><br><span class="line">    <span class="comment">// 设置激活标志位为1</span></span><br><span class="line">    io_threads_active = <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> <code>startThreadedIO()</code>方法的处理逻辑很简单：主线程把所有上锁的互斥锁给释放掉，然后设置激活标志位为1.<br> 在主线程释放锁之后，被阻塞的IO线程会抢到锁从而继续判断有没有被分配任务。</p>
+</li>
+<li><p>主线程按照Round Robin算法把需要返回数据给客户端的client分配到各个队列中，也就是<code>io_threads_list</code>数组中。</p>
+</li>
+<li><p>设置<code>io_threads_op</code>为写操作，同时统计各个IO线程需要处理的client对象的个数，并写入对应的<code>io_threads_pending</code>数组中。</p>
+<p> 这里需要提一句，在第三步中主线程调用<code>startThreadedIO()</code>方法释放了IO线程的互斥锁之后，IO线程就会从<code>pthread_mutex_lock()</code>方法中返回，接着继续会判断对应的队列中的client数量是否为0，此时对应的任务可能还是0，如果为0，接着又会继续自旋，抢锁、释放锁等。</p>
+<p> 所以我觉得<code>startThreadedIO()</code>方法可以在计算完各个IO线程的任务数量之后再调用，这个时候IO线程会从阻塞中返回，此时任务数肯定不为0，就可以避免空循环了。</p>
+</li>
+<li><p>主线程空循环等待所有的IO线程执行完成。</p>
+<p> 从这里可以看到，<strong>当IO线程在执行具体的读写操作的时候，主线程是属于空循环等待状态的</strong>。</p>
+</li>
+<li><p>如果还有数据没有写完的话则由主线程继续处理。</p>
+</li>
+<li><p>主线程清空<code>clients_pending_write</code>。</p>
+</li>
+</ol>
+<p>从这整个过程可以看下来，当主线程执行的时候，IO线程基本上处于阻塞或者自旋空循环的状态，而IO线程执行读写操作的时候，主线程处于自旋空循环状态。两个之间通过<code>_Atomic</code>类型的变量来通信。</p>
+<p>所以从根本上保证了线程安全问题。</p>
+<p>有写数据就有读数据，继续来看下多线程读数据。</p>
+<blockquote>
+<p>handleClientsWithPendingReadsUsingThreads</p>
+</blockquote>
+<p>Redis在每次事件循环之后都会调用<code>afterSleep()</code>方法，在<code>afterSleep()</code>方法中会调用<code>handleClientsWithPendingReadsUsingThreads()</code>方法。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">handleClientsWithPendingReadsUsingThreads</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//  判断是否使用多线程进行读</span></span><br><span class="line">    <span class="keyword">if</span> (!io_threads_active || !server.io_threads_do_reads) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> processed = listLength(server.clients_pending_read);</span><br><span class="line">    <span class="keyword">if</span> (processed == <span class="number">0</span>) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//... 其他省略代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>handleClientsWithPendingReadsUsingThreads()</code>首先判断需要使用多IO线程读取数据之后，紧接着会判断当前多少个client需要读取数据。需要读取数据的client对象保存在<code>server.clients_pending_read</code>中，那么数据是哪里写到<code>server.clients_pending_read</code>中去的呢？</p>
+<p>答：在<code>readQueryFromClient()</code>中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">readQueryFromClient</span><span class="params">(connection *conn)</span> </span>&#123;</span><br><span class="line">    client *c = connGetPrivateData(conn);</span><br><span class="line">    <span class="keyword">int</span> nread, readlen;</span><br><span class="line">    <span class="keyword">size_t</span> qblen;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Check if we want to read from the client later when exiting from</span></span><br><span class="line"><span class="comment">     * the event loop. This is the case if threaded I/O is enabled. */</span></span><br><span class="line">    <span class="keyword">if</span> (postponeClientRead(c)) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//... 省略代码</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* There is more data in the client input buffer, continue parsing it</span></span><br><span class="line"><span class="comment">     * in case to check if there is a full command to execute. */</span></span><br><span class="line">     processInputBufferAndReplicate(c);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>前文提到了，<code>readQueryFromClient()</code>会读取客户端发送的请求，<code>readQueryFromClient()</code>会调用<code>postponeClientRead()</code>方法来判断是否需要把读数据请求放到IO线程中去执行。</p>
+<p><code>postponeClientRead()</code>实现如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">postponeClientRead</span><span class="params">(client *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (io_threads_active &amp;&amp;</span><br><span class="line">        server.io_threads_do_reads &amp;&amp;</span><br><span class="line">        !(c-&gt;flags &amp; (CLIENT_MASTER|CLIENT_SLAVE|CLIENT_PENDING_READ)))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 给client对象的标志位增加CLIENT_PENDING_READ,这很重要</span></span><br><span class="line">        c-&gt;flags |= CLIENT_PENDING_READ;</span><br><span class="line">        <span class="comment">// 把client对象添加到server.clients_pending_read列表中</span></span><br><span class="line">        listAddNodeHead(server.clients_pending_read,c);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果IO线程已激活，允许使用多IO线程来读取数据，并且当前client的标志位不包含CLIENT_MASTER、CLIENT_SLAVE以及CLIENT_PENDING_READ，则先给当前client对象增加CLIENT_PENDING_READ标志位，然后把当前client对象添加到<br><code>server.clients_pending_read</code>列表末尾并返回1。</p>
+<p><code>postponeClientRead()</code>返回1之后，<code>readQueryFromClient()</code>方法随即返回，结束执行。</p>
+<p>现在从新回到<code>handleClientsWithPendingReadsUsingThreads()</code>方法中:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">handleClientsWithPendingReadsUsingThreads</span><span class="params">(<span class="keyword">void</span>)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (!io_threads_active || !server.io_threads_do_reads) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> processed = listLength(server.clients_pending_read);</span><br><span class="line">    <span class="keyword">if</span> (processed == <span class="number">0</span>) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (tio_debug) <span class="built_in">printf</span>(<span class="string">"%d TOTAL READ pending clients\n"</span>, processed);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Distribute the clients across N different lists. */</span></span><br><span class="line">    listIter li;</span><br><span class="line">    listNode *ln;</span><br><span class="line">    listRewind(server.clients_pending_read,&amp;li);</span><br><span class="line">    <span class="keyword">int</span> item_id = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 按照RoundRobin算法分配读任务</span></span><br><span class="line">    <span class="keyword">while</span>((ln = listNext(&amp;li))) &#123;</span><br><span class="line">        client *c = listNodeValue(ln);</span><br><span class="line">        <span class="keyword">int</span> target_id = item_id % server.io_threads_num;</span><br><span class="line">        listAddNodeTail(io_threads_list[target_id],c);</span><br><span class="line">        item_id++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Give the start condition to the waiting threads, by setting the</span></span><br><span class="line"><span class="comment">     * start condition atomic var. */</span></span><br><span class="line">    <span class="comment">// 2. 设置读操作标志位并统计各个IO线程任务数</span></span><br><span class="line">    io_threads_op = IO_THREADS_OP_READ;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; server.io_threads_num; j++) &#123;</span><br><span class="line">        <span class="keyword">int</span> count = listLength(io_threads_list[j]);</span><br><span class="line">        io_threads_pending[j] = count;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Wait for all threads to end their work. */</span></span><br><span class="line">    <span class="comment">// 3. 等待所有的线程处理完了所有的client的读数据操作</span></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">long</span> pending = <span class="number">0</span>;<span class="comment">// pending表示所有的线程加起来需要处理的client的数量</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; server.io_threads_num; j++)</span><br><span class="line">            pending += io_threads_pending[j];</span><br><span class="line">        <span class="keyword">if</span> (pending == <span class="number">0</span>) <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (tio_debug) <span class="built_in">printf</span>(<span class="string">"I/O READ All threads finshed\n"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Run the list of clients again to process the new buffers. */</span></span><br><span class="line">    listRewind(server.clients_pending_read,&amp;li);</span><br><span class="line">    <span class="keyword">while</span>((ln = listNext(&amp;li))) &#123;</span><br><span class="line">        client *c = listNodeValue(ln);</span><br><span class="line">        c-&gt;flags &amp;= ~CLIENT_PENDING_READ;</span><br><span class="line">        <span class="keyword">if</span> (c-&gt;flags &amp; CLIENT_PENDING_COMMAND) &#123;</span><br><span class="line">            c-&gt;flags &amp;= ~ CLIENT_PENDING_COMMAND;</span><br><span class="line">            <span class="comment">// 4. 执行命令</span></span><br><span class="line">            processCommandAndResetClient(c);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 5. 如果还有数据需要读取的话读取数据</span></span><br><span class="line">        processInputBufferAndReplicate(c);</span><br><span class="line">    &#125;</span><br><span class="line">    listEmpty(server.clients_pending_read);</span><br><span class="line">    <span class="keyword">return</span> processed;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>handleClientsWithPendingReadsUsingThreads()</code>方法主要完成下面几个任务：</p>
+<ol>
+<li>主线程按照RoundRobin算法给IO线程分配任务。</li>
+<li>主线程设置读操作标志位并统计各个IO线程任务数。</li>
+<li><p>主线程空循环等待所有的IO线程处理完了所有的client的读数据操作。</p>
+<p> 此时<code>io_threads_op = IO_THREADS_OP_READ</code>，IO线程会执行<code>readQueryFromClient()</code>方法进行读数据操作。</p>
+<p> 看到这里，可能会有小伙伴有疑问，前文提到过，当有客户端发送请求的时候最终会执行<code>readQueryFromClient()</code>方法，在<code>readQueryFromClient()</code>方法中会把client对象添加到<code>server.clients_pending_read</code>列表中。现在IO线程再次调用<code>readQueryFromClient()</code>方法，会不会又把当前client添加到<code>server.clients_pending_read</code>列表中然后形成死循环呢？</p>
+<p> 答案是不会的。</p>
+<p> 重新来看一下<code>postponeClientRead()</code>方法：</p>
+ <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">postponeClientRead</span><span class="params">(client *c)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (io_threads_active &amp;&amp;</span><br><span class="line">        server.io_threads_do_reads &amp;&amp;</span><br><span class="line">        !(c-&gt;flags &amp; (CLIENT_MASTER|CLIENT_SLAVE|CLIENT_PENDING_READ)))</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="comment">// 给client对象的标志位增加CLIENT_PENDING_READ,这很重要</span></span><br><span class="line">        c-&gt;flags |= CLIENT_PENDING_READ;</span><br><span class="line">        <span class="comment">// 把client对象添加到server.clients_pending_read列表中</span></span><br><span class="line">        listAddNodeHead(server.clients_pending_read,c);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 在判断要不要把client对象添加到<code>server.clients_pending_read</code>列表的时候会先判断当前client有没有<code>CLIENT_PENDING_READ</code>标志位，如果有的话则不会添加到<code>server.clients_pending_read</code>列表。</p>
+<p> 在主线程把client对象添加到<code>server.clients_pending_read</code>列表之前会先设置对应的client的<code>CLIENT_PENDING_READ</code>标志位，所以在IO线程调用<code>readQueryFromClient()</code>方法的时候不会重复进行添加，会继续往下执行。</p>
+<p> 前面分析过，在Redis5的版本中，主线程调用<code>readQueryFromClient()</code>读取数据，<code>readQueryFromClient()</code>又会调用<code>processInputBuffer()</code>方法解析参数，解析完参数之后<code>processInputBuffer()</code>会立即调用<code>processCommand()</code>方法执行命令，并把执行结果写入到输出缓冲区中。</p>
+<p> 也就是说，在Redis6之前的版本中只要调用了<code>readQueryFromClient()</code>方法就会执行具体的命令。</p>
+<p> 那么在Redis6里面会一样吗？如果一样的话，那IO线程就不只是读数据了，还会执行命令，这样的话多个IO线程同时执行命令的话，如果不加锁的话就很大概率会出现线程安全问题。但是如果加锁了，就违背了Redis初衷，而且还会影响性能。</p>
+<p> 答案是不一样。</p>
+<p> Redis6中<code>readQueryFromClient()</code>最终还是调用<code>processInputBuffer()</code>来解析请求参数。<br> 来继续看<code>processInputBuffer()</code>:</p>
+ <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">processInputBuffer</span><span class="params">(client *c)</span> </span>&#123;</span><br><span class="line">    <span class="comment">/* Keep processing while there is something in the input buffer */</span></span><br><span class="line">    <span class="keyword">while</span>(c-&gt;qb_pos &lt; sdslen(c-&gt;querybuf)) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//...其他省略解析参数的代码</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">/* Multibulk processing could see a &lt;= 0 length. */</span></span><br><span class="line">        <span class="keyword">if</span> (c-&gt;argc == <span class="number">0</span>) &#123;</span><br><span class="line">            resetClient(c);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">/* If we are in the context of an I/O thread, we can't really</span></span><br><span class="line"><span class="comment">             * execute the command here. All we can do is to flag the client</span></span><br><span class="line"><span class="comment">             * as one that needs to process the command. */</span></span><br><span class="line">            <span class="comment">// 判断当前client是否处于多线程环境，如果是的话，</span></span><br><span class="line">            <span class="comment">// 只是给client新增CLIENT_PENDING_COMMAND标志位，不会继续执行命令</span></span><br><span class="line">            <span class="keyword">if</span> (c-&gt;flags &amp; CLIENT_PENDING_READ) &#123;</span><br><span class="line">                c-&gt;flags |= CLIENT_PENDING_COMMAND;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">/* We are finally ready to execute the command. */</span></span><br><span class="line">            <span class="comment">// 执行命令</span></span><br><span class="line">            <span class="keyword">if</span> (processCommandAndResetClient(c) == C_ERR) &#123;</span><br><span class="line">                <span class="comment">/* If the client is no longer valid, we avoid exiting this</span></span><br><span class="line"><span class="comment">                 * loop and trimming the client buffer later. So we return</span></span><br><span class="line"><span class="comment">                 * ASAP in that case. */</span></span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 省略代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 从代码里面可以看到，<code>processInputBuffer()</code>方法在调用<code>processCommandAndResetClient()</code>执行命令之前会先判断当前的clien是否包含<code>CLIENT_PENDING_READ</code>标志位，如果是的话，<strong>则只是给当前的client添加<code>CLIENT_PENDING_COMMAND</code>标志位然后直接返回，并不会继续执行命令</strong>。</p>
+</li>
+</ol>
+<pre><code>总结下，在IO线程调用`readQueryFromClient()`方法读取数据之后，会继续调用`processInputBuffer()`完成参数的解析，但是不会继续执行命令。
+
+所以，**IO线程只做读数据的操作。**
+</code></pre><ol start="4">
+<li><p>等所有IO线程读取数据之后由主线程执行具体的命令。</p>
+<p> 主线程遍历<code>server.clients_pending_read</code>列表，对列表中的每一个client，会判断当前的client是否有<code>CLIENT_PENDING_COMMAND</code>标志位，如果有的话，则会继续调用<code>processCommandAndResetClient()</code>，而<code>processCommandAndResetClient()</code>会调用<code>processCommand()</code>执行具体的命令。</p>
+<p> 在上一步中分析过，IO线程在调用<code>processInputBuffer()</code>时如果发现client对象包含<code>CLIENT_PENDING_READ</code>标志位后会继续给当前client对象增加<code>CLIENT_PENDING_COMMAND</code>标志位。</p>
+<p> 所以在这一步中，<strong>主线程会对<code>server.clients_pending_read</code>列中的所有的client调用<code>processCommandAndResetClient()</code>方法执行具体的命令</strong>。</p>
+</li>
+<li>如果还有数据没有读取完的话主线程则继续读取数据。</li>
+</ol>
+<p>至此，Redis6里面的多线程实现已经分析完了，现在来总结下：</p>
+<ol>
+<li>Redis启动的时候会先启动IO线程(用户设置了线程数量，且允许多线程读)，但是IO线程一开始处于阻塞状态。</li>
+<li>每次有新客户端请求的时候主线程会执行到<code>readQueryFromClient()</code>，在<code>readQueryFromClient()</code>中主线程会把client对象添加到<code>server.clients_pending_read</code>列表中。</li>
+<li>在每次事件循环睡眠之后，Redis主线程会调用<code>handleClientsWithPendingReadsUsingThreads()</code>方法，<code>handleClientsWithPendingReadsUsingThreads()</code>方法中主线程会把<code>server.clients_pending_read</code>列表中的client对象按照RoundRobin算法依次分配到<code>io_threads_list</code>队列数组中，并空循环等待所有的IO线程完成读数据操作。</li>
+<li>IO线程会从对应的<code>io_threads_list</code>队列中获取client对象，依次调用<code>readQueryFromClient()</code>方法读取数据并按照RESP协议解析参数。</li>
+<li>等所有IO线程执行完毕后，主线程会调用<code>processCommandAndResetClient()</code>方法，<code>processCommandAndResetClient()</code>方法会调用<code>processCommand()</code>执行具体的命令，并把执行结果写入到client对象的输出缓冲区中。</li>
+<li>每次事件循环之前，Redis主线程会调用<code>handleClientsWithPendingWritesUsingThreads()</code>方法，<code>handleClientsWithPendingWritesUsingThreads()</code>中主线程会把所有需要返回数据的client对象按照RoundRobin算法分配到<code>io_threads_list</code>队列数组中，并空循环等待所有的IO线程完成写数据的操作。</li>
+<li>IO线程会从对应的<code>io_threads_list</code>队列中获取client对象，依次调用<code>writeToClient()</code>方法把client对象输出缓冲区中的数据通过socket返回给客户端。</li>
+</ol>
+<p><img src="https://i.loli.net/2020/01/14/cw94IrL8p3VKF5Z.png" alt="Redis6.png"></p>
+<h3 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h3><p>可能会有同学问，Redis里面引入多线程之后，会不会存在线程安全问题。</p>
+<p>根据上面的分析可以得出结论：<strong>不会存在线程安全问题</strong>。</p>
+<p>Redis主线程跟IO线程通过共享变量<code>io_threads_pending</code>进行通信，而<code>io_threads_pending</code>是<code>_Atomic</code>限定符限定的，所以这一块不会存在线程安全问题。</p>
+<p>而且，在IO线程执行读写数据操作的时候，主线程是处于空循环等待状态，不会进行其他的操作，所以也不会有线程安全问题。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Redis/" rel="tag"># Redis</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/12/26/CLion编译调试Redis6源码/" rel="next" title="CLion调试Redis6源码">
+                <i class="fa fa-chevron-left"></i> CLion调试Redis6源码
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">19</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#分析"><span class="nav-number">2.</span> <span class="nav-text">分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis5单线程实现"><span class="nav-number">2.1.</span> <span class="nav-text">Redis5单线程实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Redis6多线程实现"><span class="nav-number">2.2.</span> <span class="nav-text">Redis6多线程实现</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#其他"><span class="nav-number">3.</span> <span class="nav-text">其他</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
