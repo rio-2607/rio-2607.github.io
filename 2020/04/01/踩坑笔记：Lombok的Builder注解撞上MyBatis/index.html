@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Java,Mybatis,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景这两天碰到了这么一个问题：在使用MyBatis(3.5.2版本)查询数据的时候，数据库返回的数据在映射成实体对象的属性的时候类型匹配异常导致程序异常。 来看看具体的代码 首先是数据库的字段和类型: 实体类的定义如下: 12345678910111213141516@Data@Builderpublic class TestEntity &amp;#123;    private Long id;">
+<meta name="keywords" content="Java,Mybatis">
+<meta property="og:type" content="article">
+<meta property="og:title" content="踩坑笔记-Lombok的Builder注解和Data注解撞上MyBatis">
+<meta property="og:url" content="http://yoursite.com/2020/04/01/踩坑笔记：Lombok的Builder注解撞上MyBatis/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="背景这两天碰到了这么一个问题：在使用MyBatis(3.5.2版本)查询数据的时候，数据库返回的数据在映射成实体对象的属性的时候类型匹配异常导致程序异常。 来看看具体的代码 首先是数据库的字段和类型: 实体类的定义如下: 12345678910111213141516@Data@Builderpublic class TestEntity &amp;#123;    private Long id;">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://i.loli.net/2020/04/02/FGNBYv6c2bzM8Za.png">
+<meta property="og:image" content="https://i.loli.net/2020/04/02/KirtDxIzZ1u32nN.png">
+<meta property="og:image" content="https://i.loli.net/2020/04/04/KApXZ1mbhiEu5J3.png">
+<meta property="og:updated_time" content="2020-04-04T08:54:04.595Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="踩坑笔记-Lombok的Builder注解和Data注解撞上MyBatis">
+<meta name="twitter:description" content="背景这两天碰到了这么一个问题：在使用MyBatis(3.5.2版本)查询数据的时候，数据库返回的数据在映射成实体对象的属性的时候类型匹配异常导致程序异常。 来看看具体的代码 首先是数据库的字段和类型: 实体类的定义如下: 12345678910111213141516@Data@Builderpublic class TestEntity &amp;#123;    private Long id;">
+<meta name="twitter:image" content="https://i.loli.net/2020/04/02/FGNBYv6c2bzM8Za.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2020/04/01/踩坑笔记：Lombok的Builder注解撞上MyBatis/">
+
+
+
+
+
+  <title>踩坑笔记-Lombok的Builder注解和Data注解撞上MyBatis | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/04/01/踩坑笔记：Lombok的Builder注解撞上MyBatis/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">踩坑笔记-Lombok的Builder注解和Data注解撞上MyBatis</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-04-01T21:56:24+08:00">
+                2020-04-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index">
+                    <span itemprop="name">Java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/04/01/踩坑笔记：Lombok的Builder注解撞上MyBatis/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/04/01/踩坑笔记：Lombok的Builder注解撞上MyBatis/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>这两天碰到了这么一个问题：在使用MyBatis(3.5.2版本)查询数据的时候，数据库返回的数据在映射成实体对象的属性的时候类型匹配异常导致程序异常。</p>
+<p>来看看具体的代码</p>
+<p>首先是数据库的字段和类型:<br><img src="https://i.loli.net/2020/04/02/FGNBYv6c2bzM8Za.png" alt="数据库定义.png"></p>
+<p>实体类的定义如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@Builder</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestEntity</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String teacherName;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long teacherId;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> LocalDateTime createTime;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> LocalDateTime updateTime;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> level;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实体类定义的时候使用了Lombok的<code>Data</code>和<code>Builder</code>注解(如果不了解Lombok的同学欢迎Google下，Lombok能够减少很多样板代码，极大提高开发效率。)</p>
+<p>接下来看Mapper接口和定义:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">TestMapper</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function">TestEntity <span class="title">queryById</span><span class="params">(Long id)</span></span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?xml version="1.0" encoding="UTF-8"?&gt;</span></span><br><span class="line"><span class="meta">&lt;!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">mapper</span> <span class="attr">namespace</span>=<span class="string">"com.scheduler.resource.mapper.TestMapper"</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">resultMap</span> <span class="attr">id</span>=<span class="string">"testMap"</span> <span class="attr">type</span>=<span class="string">"com.scheduler.resource.entity.TestEntity"</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">id</span> <span class="attr">column</span>=<span class="string">"id"</span> <span class="attr">property</span>=<span class="string">"id"</span>/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">result</span> <span class="attr">column</span>=<span class="string">"teacher_id"</span> <span class="attr">property</span>=<span class="string">"teacherId"</span>/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">result</span> <span class="attr">column</span>=<span class="string">"teacher_name"</span> <span class="attr">property</span>=<span class="string">"teacherName"</span>/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">result</span> <span class="attr">column</span>=<span class="string">"level"</span> <span class="attr">property</span>=<span class="string">"level"</span>/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">result</span> <span class="attr">column</span>=<span class="string">"create_time"</span> <span class="attr">property</span>=<span class="string">"createTime"</span>/&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">result</span> <span class="attr">column</span>=<span class="string">"update_time"</span> <span class="attr">property</span>=<span class="string">"updateTime"</span>/&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">resultMap</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">sql</span> <span class="attr">id</span>=<span class="string">"tableName"</span>&gt;</span></span><br><span class="line">            test_table</span><br><span class="line">    <span class="tag">&lt;/<span class="name">sql</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">sql</span> <span class="attr">id</span>=<span class="string">"allFields"</span>&gt;</span></span><br><span class="line">       id,teacher_id,teacher_name,level,create_time,update_time</span><br><span class="line">    <span class="tag">&lt;/<span class="name">sql</span>&gt;</span></span><br><span class="line"></span><br><span class="line">    <span class="tag">&lt;<span class="name">select</span> <span class="attr">id</span>=<span class="string">"queryById"</span> <span class="attr">resultMap</span>=<span class="string">"testMap"</span>&gt;</span></span><br><span class="line">        SELECT</span><br><span class="line">        <span class="tag">&lt;<span class="name">include</span> <span class="attr">refid</span>=<span class="string">"allFields"</span>/&gt;</span></span><br><span class="line">        FROM</span><br><span class="line">        <span class="tag">&lt;<span class="name">include</span> <span class="attr">refid</span>=<span class="string">"tableName"</span>/&gt;</span></span><br><span class="line">        WHERE</span><br><span class="line">        id = #&#123;id&#125;</span><br><span class="line">    <span class="tag">&lt;/<span class="name">select</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="tag">&lt;/<span class="name">mapper</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>在<code>resultMap</code>中配置了数据库字段到实体类的映射关系。<br>数据库里面提前准备好mock数据:<br><img src="https://i.loli.net/2020/04/02/KirtDxIzZ1u32nN.png" alt="mock数据.png"><br>接下来调用<code>queryById()</code>方法查询数据:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Response <span class="title">test</span><span class="params">()</span>  </span>&#123;</span><br><span class="line">    TestEntity entity = testMapper.queryById(<span class="number">1111L</span>);</span><br><span class="line">    <span class="keyword">return</span> Response.successResponse(entity);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>结果程序异常，异常堆栈如下(已经省略了一些不必要的异常堆栈)：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">[ERROR][<span class="number">2020</span>-<span class="number">04</span>-<span class="number">02</span>T21:<span class="number">34</span>:<span class="number">58.611</span>+<span class="number">0800</span>][http-nio-<span class="number">8222</span>-exec-<span class="number">1</span>:ErrorHandler.java:<span class="number">53</span>] SERVICE_RUN_ERROR</span><br><span class="line">org.springframework.jdbc.UncategorizedSQLException: Error attempting to get column <span class="string">'teacher_name'</span> from result set.  Cause: java.sql.SQLException: Error</span><br><span class="line">; uncategorized SQLException; SQL state [<span class="keyword">null</span>]; error code [<span class="number">0</span>]; Error; nested exception is java.sql.SQLException: Error</span><br><span class="line">	at org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator.translate(AbstractFallbackSQLExceptionTranslator.java:<span class="number">89</span>)</span><br><span class="line">	at org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator.translate(AbstractFallbackSQLExceptionTranslator.java:<span class="number">81</span>)</span><br><span class="line">	at java.lang.Thread.run(Thread.java:<span class="number">748</span>)</span><br><span class="line">Caused by: java.sql.SQLException: Error</span><br><span class="line">	at com.alibaba.druid.pool.DruidDataSource.handleConnectionException(DruidDataSource.java:<span class="number">1718</span>)</span><br><span class="line">	at com.alibaba.druid.pool.DruidPooledConnection.handleException(DruidPooledConnection.java:<span class="number">133</span>)</span><br><span class="line">	at com.alibaba.druid.pool.DruidPooledStatement.checkException(DruidPooledStatement.java:<span class="number">82</span>)</span><br><span class="line">	at com.alibaba.druid.pool.DruidPooledResultSet.checkException(DruidPooledResultSet.java:<span class="number">55</span>)</span><br><span class="line">	at com.alibaba.druid.pool.DruidPooledResultSet.getLong(DruidPooledResultSet.java:<span class="number">304</span>)</span><br><span class="line">	at org.apache.ibatis.type.LongTypeHandler.getNullableResult(LongTypeHandler.java:<span class="number">37</span>)</span><br><span class="line">	at org.apache.ibatis.type.LongTypeHandler.getNullableResult(LongTypeHandler.java:<span class="number">26</span>)</span><br><span class="line">	at org.apache.ibatis.type.BaseTypeHandler.getResult(BaseTypeHandler.java:<span class="number">81</span>)</span><br><span class="line">	at org.apache.ibatis.executor.resultset.DefaultResultSetHandler.createUsingConstructor(DefaultResultSetHandler.java:<span class="number">671</span>)</span><br><span class="line">	at org.apache.ibatis.executor.resultset.DefaultResultSetHandler.createByConstructorSignature(DefaultResultSetHandler.java:<span class="number">654</span>)</span><br><span class="line">	at org.apache.ibatis.executor.resultset.DefaultResultSetHandler.createResultObject(DefaultResultSetHandler.java:<span class="number">618</span>)</span><br><span class="line">	at org.apache.ibatis.executor.resultset.DefaultResultSetHandler.createResultObject(DefaultResultSetHandler.java:<span class="number">591</span>)</span><br><span class="line">	at org.apache.ibatis.executor.resultset.DefaultResultSetHandler.getRowValue(DefaultResultSetHandler.java:<span class="number">397</span>)</span><br><span class="line">	at org.apache.ibatis.executor.resultset.DefaultResultSetHandler.handleRowValuesForSimpleResultMap(DefaultResultSetHandler.java:<span class="number">354</span>)</span><br><span class="line">	at org.apache.ibatis.executor.resultset.DefaultResultSetHandler.handleRowValues(DefaultResultSetHandler.java:<span class="number">328</span>)</span><br><span class="line">	at org.apache.ibatis.executor.resultset.DefaultResultSetHandler.handleResultSet(DefaultResultSetHandler.java:<span class="number">301</span>)</span><br><span class="line">	at</span><br><span class="line">Caused by: java.lang.NumberFormatException: For input string: <span class="string">"Slogen"</span></span><br><span class="line">	at sun.misc.FloatingDecimal.readJavaFormatString(FloatingDecimal.java:<span class="number">2043</span>)</span><br><span class="line">	at sun.misc.FloatingDecimal.parseDouble(FloatingDecimal.java:<span class="number">110</span>)</span><br><span class="line">	at java.lang.Double.parseDouble(Double.java:<span class="number">538</span>)</span><br><span class="line">	at com.mysql.cj.protocol.a.MysqlTextValueDecoder.getDouble(MysqlTextValueDecoder.java:<span class="number">238</span>)</span><br><span class="line">	at com.mysql.cj.result.AbstractNumericValueFactory.createFromBytes(AbstractNumericValueFactory.java:<span class="number">57</span>)</span><br><span class="line">	at com.mysql.cj.protocol.a.MysqlTextValueDecoder.decodeByteArray(MysqlTextValueDecoder.java:<span class="number">132</span>)</span><br><span class="line">	at com.mysql.cj.protocol.result.AbstractResultsetRow.decodeAndCreateReturnValue(AbstractResultsetRow.java:<span class="number">133</span>)</span><br><span class="line">	at com.mysql.cj.protocol.result.AbstractResultsetRow.getValueFromBytes(AbstractResultsetRow.java:<span class="number">241</span>)</span><br><span class="line">	at com.mysql.cj.protocol.a.result.ByteArrayRow.getValue(ByteArrayRow.java:<span class="number">91</span>)</span><br><span class="line">	at com.mysql.cj.jdbc.result.ResultSetImpl.getObject(ResultSetImpl.java:<span class="number">1290</span>)</span><br><span class="line">	at com.mysql.cj.jdbc.result.ResultSetImpl.getLong(ResultSetImpl.java:<span class="number">812</span>)</span><br><span class="line">	at com.mysql.cj.jdbc.result.ResultSetImpl.getLong(ResultSetImpl.java:<span class="number">818</span>)</span><br><span class="line">	at com.alibaba.druid.pool.DruidPooledResultSet.getLong(DruidPooledResultSet.java:<span class="number">302</span>)</span><br><span class="line">	... <span class="number">88</span> common frames omitted</span><br></pre></td></tr></table></figure>
+<p>程序异常原因是<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Error attempting to get column <span class="string">'teacher_name'</span> from result set.  Cause: java.sql.SQLException: Error</span><br><span class="line">; uncategorized SQLException; SQL state [<span class="keyword">null</span>]; error code [<span class="number">0</span>]; Error; nested exception is java.sql.SQLException: Error</span><br><span class="line"></span><br><span class="line">Caused by: java.lang.NumberFormatException: For input string: <span class="string">"Slogen"</span></span><br></pre></td></tr></table></figure></p>
+<p>简单来说就是程序尝试把<code>&quot;Slogen&quot;</code>这个字符串转换成数字的时候出错了。</p>
+<p>mock数据的时候明明是设置了<code>teacher_name</code>字段等于<code>&quot;Slogen&quot;</code>，在xml映射文件中把数据库的<code>teacher_name</code>列映射到实体类的<code>teacherName</code>属性上，而<code>teacherName</code>属性是<code>String</code>类型的，所以按道理说不应该进行类型转换的。</p>
+<p>那么为什么程序会尝试把字符串<code>&quot;Slogen&quot;</code>转换成数字呢？</p>
+<p>源码面前，了无秘密。</p>
+<p>还是从源码中找答案吧。</p>
+<h3 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h3><p>MyBatis在数据库返回数据的时候会按照<code>resultMap</code>的映射转换成Java实体对象，这个过程是在<code>DefaultResultSetHandler</code>类的<code>getRowValue()</code>方法中进行的<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// GET VALUE FROM ROW FOR SIMPLE RESULT MAP</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> Object <span class="title">getRowValue</span><span class="params">(ResultSetWrapper rsw, ResultMap resultMap, String columnPrefix)</span> <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> ResultLoaderMap lazyLoader = <span class="keyword">new</span> ResultLoaderMap();</span><br><span class="line">  <span class="comment">// 把数据库返回的数据转换成实体类对象</span></span><br><span class="line">  <span class="comment">// resultMap中保存的就是在xml文件中配置的映射，rsw对象中保存了数据库返回的数据</span></span><br><span class="line">  Object rowValue = createResultObject(rsw, resultMap, lazyLoader, columnPrefix);</span><br><span class="line">  <span class="keyword">if</span> (rowValue != <span class="keyword">null</span> &amp;&amp; !hasTypeHandlerForResultObject(rsw, resultMap.getType())) &#123;</span><br><span class="line">    <span class="keyword">final</span> MetaObject metaObject = configuration.newMetaObject(rowValue);</span><br><span class="line">    <span class="keyword">boolean</span> foundValues = <span class="keyword">this</span>.useConstructorMappings;</span><br><span class="line">    <span class="keyword">if</span> (shouldApplyAutomaticMappings(resultMap, <span class="keyword">false</span>)) &#123;</span><br><span class="line">      foundValues = applyAutomaticMappings(rsw, resultMap, metaObject, columnPrefix) || foundValues;</span><br><span class="line">    &#125;</span><br><span class="line">    foundValues = applyPropertyMappings(rsw, resultMap, metaObject, lazyLoader, columnPrefix) || foundValues;</span><br><span class="line">    foundValues = lazyLoader.size() &gt; <span class="number">0</span> || foundValues;</span><br><span class="line">    rowValue = foundValues || configuration.isReturnInstanceForEmptyRow() ? rowValue : <span class="keyword">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> rowValue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>其中<code>rsw</code>对象保存了数据库中返回的数据，<code>resultMap</code>中保存了xml文件中配置的映射。</p>
+<p><code>getRowValue()</code>中会调用<code>createResultObject()</code>方法完成具体的转换</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="comment">// INSTANTIATION &amp; CONSTRUCTOR MAPPING</span></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> Object <span class="title">createResultObject</span><span class="params">(ResultSetWrapper rsw, ResultMap resultMap, ResultLoaderMap lazyLoader, String columnPrefix)</span> <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">  <span class="keyword">this</span>.useConstructorMappings = <span class="keyword">false</span>; <span class="comment">// reset previous mapping result</span></span><br><span class="line">  <span class="keyword">final</span> List&lt;Class&lt;?&gt;&gt; constructorArgTypes = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">  <span class="keyword">final</span> List&lt;Object&gt; constructorArgs = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">  Object resultObject = createResultObject(rsw, resultMap, constructorArgTypes, constructorArgs, columnPrefix);</span><br><span class="line">  <span class="comment">// 省略代码</span></span><br><span class="line">  <span class="keyword">this</span>.useConstructorMappings = resultObject != <span class="keyword">null</span> &amp;&amp; !constructorArgTypes.isEmpty(); <span class="comment">// set current mapping result</span></span><br><span class="line">  <span class="keyword">return</span> resultObject;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续跟踪到<code>createResultObject()</code>中:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> Object <span class="title">createResultObject</span><span class="params">(ResultSetWrapper rsw, ResultMap resultMap, List&lt;Class&lt;?&gt;&gt; constructorArgTypes, List&lt;Object&gt; constructorArgs, String columnPrefix)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> Class&lt;?&gt; resultType = resultMap.getType();</span><br><span class="line">  <span class="keyword">final</span> MetaClass metaType = MetaClass.forClass(resultType, reflectorFactory);</span><br><span class="line">  <span class="keyword">final</span> List&lt;ResultMapping&gt; constructorMappings = resultMap.getConstructorResultMappings();</span><br><span class="line">  <span class="keyword">if</span> (hasTypeHandlerForResultObject(rsw, resultType)) &#123;</span><br><span class="line">    <span class="comment">// 目标类型有没有特定的类型处理器</span></span><br><span class="line">    <span class="keyword">return</span> createPrimitiveResultObject(rsw, resultMap, columnPrefix);</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!constructorMappings.isEmpty()) &#123;</span><br><span class="line">    <span class="comment">// 目标类型构造函数映射是否为空</span></span><br><span class="line">    <span class="keyword">return</span> createParameterizedResultObject(rsw, resultType, constructorMappings, constructorArgTypes, constructorArgs, columnPrefix);</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (resultType.isInterface() || metaType.hasDefaultConstructor()) &#123;</span><br><span class="line">    <span class="comment">// 目标类型是否是接口或者有默认构造函数</span></span><br><span class="line">    <span class="keyword">return</span> objectFactory.create(resultType);</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (shouldApplyAutomaticMappings(resultMap, <span class="keyword">false</span>)) &#123;</span><br><span class="line">    <span class="comment">//可以自动映射，则按照构造函数来生成</span></span><br><span class="line">    <span class="keyword">return</span> createByConstructorSignature(rsw, resultType, constructorArgTypes, constructorArgs);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">throw</span> <span class="keyword">new</span> ExecutorException(<span class="string">"Do not know how to create an instance of "</span> + resultType);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>createResultObject()</code>方法中会判断应该怎么进行目标对象的实例化：判断规则如下：</p>
+<ul>
+<li>如果目标类型有特定的类型处理器，则调用<code>createPrimitiveResultObject()</code>进行转换成对象。</li>
+<li>如果目标类型的构造函数映射不为空，则调用<code>createParameterizedResultObject()</code>进行转换成对象。</li>
+<li>如果目标类型是接口或者有默认构造函数，则由对象工厂生成。</li>
+<li>如果可以自动映射，则按照有参数构造函数进行转换成对象。</li>
+</ul>
+<p>本例中的目标类型是<code>TestEntity</code>类，在<code>TestEntity</code>中我们没有写任何构造函数和<code>get/set</code>方法，而是由Lombok的Data注解和Builder注解来实现。</p>
+<p>Data注解会给被注解的类的所有属性生成<code>get/set</code>方法以及实现了<code>hashCode()</code>、<code>toString()</code>和<code>equals()</code>方法，并且生成一个无参数的构造函数。<br>Builder注解除了会生成相应的建筑者模式的代码外，还会生成一个全属性参数的构造函数，参数的顺序就是属性定义的顺序。</p>
+<p><strong>但是如果Data注解和Builder注解一块使用的话就只会生成全属性参数构造函数，不会有默认无参构造函数。</strong></p>
+<p>也即是说，本例中，TestEntity会生成一个函数签名为<code>com.scheduler.resource.entity.TestEntity(java.lang.Long,java.lang.String,java.lang.Long,java.time.LocalDateTime,java.time.LocalDateTime,int)</code>的构造函数。</p>
+<p>因此，对于<code>TestEntity</code>来说，既没有定义特定的类型处理器，构造函数映射为空，且没有无参构造函数，也不是接口，所以执行的是<code>createByConstructorSignature(rsw, resultType, constructorArgTypes, constructorArgs)</code>这个方法。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> Object <span class="title">createByConstructorSignature</span><span class="params">(ResultSetWrapper rsw, Class&lt;?&gt; resultType, List&lt;Class&lt;?&gt;&gt; constructorArgTypes, List&lt;Object&gt; constructorArgs)</span> <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">  <span class="comment">// 找到实体类中的构造函数，选取第一个</span></span><br><span class="line">  <span class="keyword">final</span> Constructor&lt;?&gt;[] constructors = resultType.getDeclaredConstructors();</span><br><span class="line">  <span class="keyword">final</span> Constructor&lt;?&gt; defaultConstructor = findDefaultConstructor(constructors);</span><br><span class="line">  <span class="keyword">if</span> (defaultConstructor != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="comment">// 通过构造函数生成对象</span></span><br><span class="line">    <span class="keyword">return</span> createUsingConstructor(rsw, resultType, constructorArgTypes, constructorArgs, defaultConstructor);</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (Constructor&lt;?&gt; constructor : constructors) &#123;</span><br><span class="line">      <span class="keyword">if</span> (allowedConstructorUsingTypeHandlers(constructor, rsw.getJdbcTypes())) &#123;</span><br><span class="line">        <span class="keyword">return</span> createUsingConstructor(rsw, resultType, constructorArgTypes, constructorArgs, constructor);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">throw</span> <span class="keyword">new</span> ExecutorException(<span class="string">"No constructor found in "</span> + resultType.getName() + <span class="string">" matching "</span> + rsw.getClassNames());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>createByConstructorSignature()</code>方法首先找到实体类中定义的构造函数，选取第一个，本例中就只有一个全属性参数构造函数，然后使用这个构造函数调用<code>createUsingConstructor()</code>方法。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> Object <span class="title">createUsingConstructor</span><span class="params">(ResultSetWrapper rsw, Class&lt;?&gt; resultType, List&lt;Class&lt;?&gt;&gt; constructorArgTypes, List&lt;Object&gt; constructorArgs, Constructor&lt;?&gt; constructor)</span> <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">  <span class="keyword">boolean</span> foundValues = <span class="keyword">false</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; constructor.getParameterTypes().length; i++) &#123;</span><br><span class="line">    <span class="comment">// 遍历构造函数的参数，依次与数据库中的字段映射</span></span><br><span class="line">    Class&lt;?&gt; parameterType = constructor.getParameterTypes()[i];</span><br><span class="line">    String columnName = rsw.getColumnNames().get(i);</span><br><span class="line">    TypeHandler&lt;?&gt; typeHandler = rsw.getTypeHandler(parameterType, columnName);</span><br><span class="line">    Object value = typeHandler.getResult(rsw.getResultSet(), columnName);</span><br><span class="line">    constructorArgTypes.add(parameterType);</span><br><span class="line">    constructorArgs.add(value);</span><br><span class="line">    foundValues = value != <span class="keyword">null</span> || foundValues;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> foundValues ? objectFactory.create(resultType, constructorArgTypes, constructorArgs) : <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>createUsingConstructor()</code>方法主要的作用就是按照构造函数入参的顺序，把数据库中对应索引的字段赋值给对应的属性。</p>
+<p><img src="https://i.loli.net/2020/04/04/KApXZ1mbhiEu5J3.png" alt="15.png"></p>
+<table>
+<thead>
+<tr>
+<th style="text-align:center">数据库字段顺序</th>
+<th style="text-align:center">实体类字段顺序</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:center"><code>id</code></td>
+<td style="text-align:center"><code>id</code></td>
+</tr>
+<tr>
+<td style="text-align:center"><code>teacher_id</code></td>
+<td style="text-align:center"><code>teacherName</code></td>
+</tr>
+<tr>
+<td style="text-align:center"><code>teacher_name</code></td>
+<td style="text-align:center"><code>teacherId</code></td>
+</tr>
+<tr>
+<td style="text-align:center"><code>level</code></td>
+<td style="text-align:center"><code>createTime</code></td>
+</tr>
+<tr>
+<td style="text-align:center"><code>createTime</code></td>
+<td style="text-align:center"><code>updateTime</code></td>
+</tr>
+<tr>
+<td style="text-align:center"><code>updateTime</code></td>
+<td style="text-align:center"><code>level</code></td>
+</tr>
+</tbody>
+</table>
+<p>因此，<code>createUsingConstructor()</code>方法会把<code>teacher_name</code>字段的值<code>&#39;Slogen&#39;</code>赋值给<code>teacherId</code>属性，而<code>teacherId</code>是<code>Long</code>类型，所以进行类型转换的时候失败，从而抛出<code>Caused by: java.lang.NumberFormatException: For input string: &quot;Slogen&quot;</code>异常。</p>
+<p><strong>总结一下，由于实体类<code>TestEntity</code>同时使用了<code>Data</code>注解和<code>Builder</code>注解导致没有默认无参构造函数，只有一个全属性参数构造函数，参数顺序就是属性定义的顺序。MyBatis在把数据库字段映射到实体类的时候发现实体类没有默认无参构造函数的话，就会把数据库中的字段按照构造函数参数的顺序依次赋值给实体类的属性。一旦实体类的属性定义顺序与数据库中字段顺序不一致的话且类型没法兼容(即不能互相转换)就会出错。</strong></p>
+<h3 id="解法"><a href="#解法" class="headerlink" title="解法"></a>解法</h3><h4 id="解法一"><a href="#解法一" class="headerlink" title="解法一"></a>解法一</h4><p>实体类中属性定义的顺序与数据库中字段顺序保持一致即可。</p>
+<p>本例中把<code>TestEntity</code>类的定义改成如下所示即可正常使用。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@Builder</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestEntity</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long teacherId;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String teacherName;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> level;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> LocalDateTime createTime;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> LocalDateTime updateTime;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="解法二"><a href="#解法二" class="headerlink" title="解法二"></a>解法二</h4><p>根据前面的分析，只有在实体类没有默认无参构造函数的情况下才会按照上面分析的那种方式进行构造。如果实体类有默认无参构造函数，则是直接调用对象工厂<code>objectFactory.create(resultType)</code>(底层就是反射)直接生成一个对象。</p>
+<p>然后在<code>getRowValue()</code>方法中，调用<code>applyPropertyMappings()</code>方法按照xml文件中配置好的映射进行属性赋值。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> Object <span class="title">getRowValue</span><span class="params">(ResultSetWrapper rsw, ResultMap resultMap, String columnPrefix)</span> <span class="keyword">throws</span> SQLException </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> ResultLoaderMap lazyLoader = <span class="keyword">new</span> ResultLoaderMap();</span><br><span class="line">  Object rowValue = createResultObject(rsw, resultMap, lazyLoader, columnPrefix);</span><br><span class="line">  <span class="keyword">if</span> (rowValue != <span class="keyword">null</span> &amp;&amp; !hasTypeHandlerForResultObject(rsw, resultMap.getType())) &#123;</span><br><span class="line">    <span class="comment">// ... 省略代码</span></span><br><span class="line">    <span class="comment">// 按照xml文件中配置好的映射进行属性赋值</span></span><br><span class="line">    foundValues = applyPropertyMappings(rsw, resultMap, metaObject, lazyLoader, columnPrefix) || foundValues;</span><br><span class="line">    foundValues = lazyLoader.size() &gt; <span class="number">0</span> || foundValues;</span><br><span class="line">    rowValue = foundValues || configuration.isReturnInstanceForEmptyRow() ? rowValue : <span class="keyword">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> rowValue;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>因此，此时只需要给实体类加上<code>@NoArgsConstructor</code>和<code>@AllArgsConstructor</code>注解，让实体类有无参构造函数即可。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Data</span></span><br><span class="line"><span class="meta">@Builder</span></span><br><span class="line"><span class="meta">@NoArgsConstructor</span></span><br><span class="line"><span class="meta">@AllArgsConstructor</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestEntity</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String teacherName;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long teacherId;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> LocalDateTime createTime;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> LocalDateTime updateTime;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> level;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Java/" rel="tag"># Java</a>
+          
+            <a href="/tags/Mybatis/" rel="tag"># Mybatis</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/02/17/基于企业微信的异常日志报警/" rel="next" title="基于企业微信的错误日志报警">
+                <i class="fa fa-chevron-left"></i> 基于企业微信的错误日志报警
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">29</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#原因分析"><span class="nav-number">2.</span> <span class="nav-text">原因分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解法"><span class="nav-number">3.</span> <span class="nav-text">解法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#解法一"><span class="nav-number">3.1.</span> <span class="nav-text">解法一</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#解法二"><span class="nav-number">3.2.</span> <span class="nav-text">解法二</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
