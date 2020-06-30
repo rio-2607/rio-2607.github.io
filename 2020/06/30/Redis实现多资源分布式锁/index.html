@@ -68,7 +68,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT">
+  <meta name="keywords" content="Redis,分布式锁,">
 
 
 
@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="TODO">
-<meta name="keywords" content="Coding">
+<meta name="description" content="不骄不躁，韬光养晦。荣辱不惊，厚积薄发。">
+<meta name="keywords" content="Redis,分布式锁">
 <meta property="og:type" content="article">
-<meta property="og:title" content="天凉好个秋">
+<meta property="og:title" content="Redis实现多资源分布式锁">
 <meta property="og:url" content="http://yoursite.com/2020/06/30/Redis实现多资源分布式锁/index.html">
 <meta property="og:site_name" content="天凉好个秋">
-<meta property="og:description" content="TODO">
+<meta property="og:description" content="不骄不躁，韬光养晦。荣辱不惊，厚积薄发。">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2020-06-30T02:24:08.285Z">
+<meta property="og:updated_time" content="2020-06-30T02:25:23.892Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="天凉好个秋">
-<meta name="twitter:description" content="TODO">
+<meta name="twitter:title" content="Redis实现多资源分布式锁">
+<meta name="twitter:description" content="不骄不躁，韬光养晦。荣辱不惊，厚积薄发。">
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-  <title> | 天凉好个秋</title>
+  <title>Redis实现多资源分布式锁 | 天凉好个秋</title>
   
 
 
@@ -280,7 +280,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline"></h1>
+          <h1 class="post-title" itemprop="name headline">Redis实现多资源分布式锁</h1>
         
 
         <div class="post-meta">
@@ -302,6 +302,28 @@
             
           </span>
 
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Redis/" itemprop="url" rel="index">
+                    <span itemprop="name">Redis</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
           
 
           
@@ -340,7 +362,7 @@
       
 
       
-        <h3 id="TODO"><a href="#TODO" class="headerlink" title="TODO"></a>TODO</h3>
+        
       
     </div>
     
@@ -380,6 +402,14 @@ margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-sha
     
 
     <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Redis/" rel="tag"># Redis</a>
+          
+            <a href="/tags/分布式锁/" rel="tag"># 分布式锁</a>
+          
+        </div>
       
 
       
@@ -453,17 +483,8 @@ margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-sha
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview-wrap sidebar-panel">
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -502,7 +523,7 @@ margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-sha
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">21</span>
+                  <span class="site-state-item-count">22</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
@@ -525,22 +546,6 @@ margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-sha
         </div>
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#TODO"><span class="nav-number">1.</span> <span class="nav-text">TODO</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       
