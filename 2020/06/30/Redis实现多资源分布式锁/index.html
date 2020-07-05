@@ -79,18 +79,18 @@
 
 
 
-<meta name="description" content="不骄不躁，韬光养晦。荣辱不惊，厚积薄发。">
+<meta name="description" content="业务背景作为一个线上早教业务，最基础的功能是支持用户下完订单之后在APP上进行自主约课。 APP上可约课的课程数据由运营同学提前在后台录入好。 课程数据包括两部分：  老师数据。即老师可上课时间段。比如A老师在周一9:00 ~ 12:00可以上等级为1的课，B老师在周一10:00 ~ 12:00可以上等级为二的课等。不同的等级表示不同类型的课程。  时间段数据。即某个时间段(beginTime-e">
 <meta name="keywords" content="Redis,分布式锁">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Redis实现多资源分布式锁">
+<meta property="og:title" content="Redis Lua实现批量分布式锁">
 <meta property="og:url" content="http://yoursite.com/2020/06/30/Redis实现多资源分布式锁/index.html">
 <meta property="og:site_name" content="天凉好个秋">
-<meta property="og:description" content="不骄不躁，韬光养晦。荣辱不惊，厚积薄发。">
+<meta property="og:description" content="业务背景作为一个线上早教业务，最基础的功能是支持用户下完订单之后在APP上进行自主约课。 APP上可约课的课程数据由运营同学提前在后台录入好。 课程数据包括两部分：  老师数据。即老师可上课时间段。比如A老师在周一9:00 ~ 12:00可以上等级为1的课，B老师在周一10:00 ~ 12:00可以上等级为二的课等。不同的等级表示不同类型的课程。  时间段数据。即某个时间段(beginTime-e">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2020-06-30T02:25:23.892Z">
+<meta property="og:updated_time" content="2020-07-05T12:11:23.816Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Redis实现多资源分布式锁">
-<meta name="twitter:description" content="不骄不躁，韬光养晦。荣辱不惊，厚积薄发。">
+<meta name="twitter:title" content="Redis Lua实现批量分布式锁">
+<meta name="twitter:description" content="业务背景作为一个线上早教业务，最基础的功能是支持用户下完订单之后在APP上进行自主约课。 APP上可约课的课程数据由运营同学提前在后台录入好。 课程数据包括两部分：  老师数据。即老师可上课时间段。比如A老师在周一9:00 ~ 12:00可以上等级为1的课，B老师在周一10:00 ~ 12:00可以上等级为二的课等。不同的等级表示不同类型的课程。  时间段数据。即某个时间段(beginTime-e">
 
 
 
@@ -126,7 +126,7 @@
 
 
 
-  <title>Redis实现多资源分布式锁 | 天凉好个秋</title>
+  <title>Redis Lua实现批量分布式锁 | 天凉好个秋</title>
   
 
 
@@ -280,7 +280,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">Redis实现多资源分布式锁</h1>
+          <h1 class="post-title" itemprop="name headline">Redis Lua实现批量分布式锁</h1>
         
 
         <div class="post-meta">
@@ -362,7 +362,60 @@
       
 
       
-        
+        <h3 id="业务背景"><a href="#业务背景" class="headerlink" title="业务背景"></a>业务背景</h3><p>作为一个线上早教业务，最基础的功能是支持用户下完订单之后在APP上进行自主约课。</p>
+<p>APP上可约课的课程数据由运营同学提前在后台录入好。</p>
+<p>课程数据包括两部分：</p>
+<ol>
+<li><p>老师数据。即老师可上课时间段。比如A老师在周一9:00 ~ 12:00可以上等级为1的课，B老师在周一10:00 ~ 12:00可以上等级为二的课等。不同的等级表示不同类型的课程。</p>
+</li>
+<li><p>时间段数据。即某个时间段(beginTime-endTime)可开设什么类型的课。比如周一9:00 ~ 9:40可开设等级一的课，15:00 ~ 15:40可以开设等级二的课。</p>
+</li>
+</ol>
+<p>老师数据可以分为两个状态：</p>
+<ol>
+<li><p>可用状态。</p>
+</li>
+<li><p>实际分配状态。</p>
+</li>
+</ol>
+<p>在创建时间段数据的时候会计算对应时间段哪些老师在该时间段内可以上课(可用)。</p>
+<p>在第一个用户选了某一时间段的课程或者该时间段课程的选课人数超过4人(每个老师最多带4个学生)的时候会按照一些复杂的业务规则从该时间段内所有可用老师中选择一个老师实际分配给该时间段。</p>
+<p>举个例子：</p>
+<p>运营同学在后台录入了老师A和老师B都在周一9:00 ~ 18:00 可以上等级一的课程，且运营同学在周一9:00 ~ 09:40(T1) 和 14:00 ~ 14:40(T2)排了两节等级一的课程。</p>
+<p>此时可以上T1的课的老师为A和B，可以上T2的课的老师为A和B。</p>
+<p>如果此时有用户选了T1的课，那么需要根据业务规则从A和B老师中选出一个老师绑定到T1时间段上。</p>
+<p>选择分配老师的业务规则要求实时计算出所有老师(本例中是老师A和老师B)在当天，当周和当月各自的上课课节数，然后按照其他的一些规则最终计算出最终的老师。</p>
+<p>也就是说，在给时间段分配老师的时候，需要计算当前时刻各个老师的上课课节数据，而老师的数据是随时在变化的（因为一个老师同一时间可以在多个时间段上可用，也就是说可以同时被分配给其他时间段，从而老师对应的课节数就发生了变化），<strong>所以在计算分配老师的时候需要禁止该时间段对应的所有可用的老师被其他时间段分配。</strong></p>
+<p>举个例子，当给时间段T1分配老师的时候，就需要保证T1可用的老师A和B不能被其他时间段分配。</p>
+<p>要实现这个功能，很明显就是需要锁，在给T1分配老师的时候，需要同时锁定老师A和B，这样老师A和B就没法被其他时间段绑定。</p>
+<h3 id="Redis实现"><a href="#Redis实现" class="headerlink" title="Redis实现"></a>Redis实现</h3><h4 id="解法一：全局加锁"><a href="#解法一：全局加锁" class="headerlink" title="解法一：全局加锁"></a>解法一：全局加锁</h4><p>最简单的解法就是使用一个全局分布式锁，在计算、分配老师之前，先加锁，在计算分配完成之后再释放锁。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">assignteacher</span><span class="params">(List&lt;Teacher&gt; teachers)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="keyword">if</span>(redisRepository.setNx(<span class="string">"lock"</span>, <span class="number">1</span>, Duration.ofMillis(<span class="number">200</span>))) &#123;</span><br><span class="line">			<span class="comment">// 上锁成功，则开始计算各个老师对应的课节数</span></span><br><span class="line">			Map&lt;Long, Integer&gt; teacherLessonCountMap = calcTeacherLessonCount();</span><br><span class="line">			<span class="function"><span class="keyword">long</span> selectedTeacher <span class="title">doAssignTeacher</span><span class="params">(teacherLessonCountMap)</span></span>; <span class="comment">// 按照特务规则进行老师分配</span></span><br><span class="line">			doAssign(selectedTeacher); <span class="comment">// 完成具体的分配，主要是底层数据库的变更</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">		redisRepository.del(<span class="string">"lock"</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这种解法是最简单也是最不会出错的，任何时间段在分配老师前都先去获取锁，只有获取成功之后才会进行分配老师、完成底层数据库的变更操作，没有抢到锁的时间段则不会做任何操作，也就不会影响到老师的课节数据。</p>
+<p>但是这样会有个问题，如果两个时间段没有任何共同的可用老师，实际上彼此之间也就不会有任何影响，也就没必要互相等待。性能会比较低。</p>
+<h4 id="解法二：依次加锁"><a href="#解法二：依次加锁" class="headerlink" title="解法二：依次加锁"></a>解法二：依次加锁</h4><p>重新分析下业务需求，实际上也就只有可用老师有交集的时候才需要互斥，如果两个时间段可用老师没有任何交集，则完全可以同时进行。</p>
+<p>比如说，时间段TT1可用的老师是A，B，C，时间段TT2可用的老师是B，C，D，时间段TT3可用的老师是B，E，时间段TT4可用的老师是H，K，那么实际上，对时间段TT4分配老师的行为可以同时与TT1、TT2和TT3同时进行，而TT1、TT2和TT3这三个时间段同一时刻只能有一个在分配老师。</p>
+<p>那么，思路其实很简单了，只需要给时间段上的可用老师进行加锁（所谓加锁的本质就是多个线程or机器同时去设置同一个redis key，设置成功上的即认为上锁成功，设置失败的则认为上锁失败），可用老师没有交集的时间段则可以同时进行。</p>
+<p>那么怎么同时给多个老师加锁呢？</p>
+<p>把老师的id组装在一起设置成锁的key？</p>
+<p>这样其实不行，可用老师有交集但是不完全一样，形成的锁的key不是同一个。</p>
+<p>那么依次给可用老师加锁呢？</p>
+<p>比如说对于TT1，先给A加锁，加成功之后在给B加锁，B加成功之后再给C加锁，成功之后才开始执行逻辑，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">assignteacher</span><span class="params">(List&lt;Teacher&gt; teachers)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="keyword">boolean</span> success = <span class="keyword">true</span>;</span><br><span class="line">		<span class="keyword">for</span>(Teacher t : teachers) &#123;</span><br><span class="line">			<span class="comment">// 依次加锁</span></span><br><span class="line">			<span class="keyword">boolean</span> result = redisRepository.setNx(t.getId(), <span class="number">1</span>, Duration.ofMillis(<span class="number">200</span>));</span><br><span class="line">			success = success &amp;&amp; result;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span>(success) &#123;</span><br><span class="line">			<span class="comment">// 加锁成功</span></span><br><span class="line">			Map&lt;Long, Integer&gt; teacherLessonCountMap = calcTeacherLessonCount();</span><br><span class="line">			<span class="function"><span class="keyword">long</span> selectedTeacher <span class="title">doAssignTeacher</span><span class="params">(teacherLessonCountMap)</span></span>; <span class="comment">// 按照特务规则进行老师分配</span></span><br><span class="line">			doAssign(selectedTeacher); <span class="comment">// 完成具体的分配，主要是底层数据库的变更</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">		<span class="keyword">for</span>(Teacher t : teachers) &#123;</span><br><span class="line">			redisRepository.del(t.getId());</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面这个依次加锁的方法理论上是可以实现业务需求，但是这个方法有明显的缺点：</p>
+<ol>
+<li>代码难理解，难维护。</li>
+<li>极有可能会造成死锁。</li>
+</ol>
+<h4 id="解法三：多资源同时加锁"><a href="#解法三：多资源同时加锁" class="headerlink" title="解法三：多资源同时加锁"></a>解法三：多资源同时加锁</h4><p>用Redis实现分布式锁，lua脚本是一种常用的实现方式，Redis本身能够保证lua脚本的执行是原子性的。所以本需求就可以采用lua脚本来实现。</p>
+<p>入参为可用老师ID列表，lua脚本中依次每个老师是否被锁（即redis中是否存在以对应老师的id为key的值），如果都没有被锁则上锁且返回成功，否则抢锁失败。</p>
+<p>先定义lua脚本，实现批量上锁是解锁功能：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- lock.lua</span></span><br><span class="line"><span class="comment">-- 同时锁定多个资源</span></span><br><span class="line"><span class="keyword">local</span> non_exist = <span class="literal">true</span></span><br><span class="line"><span class="keyword">local</span> i = <span class="number">1</span></span><br><span class="line"><span class="keyword">for</span> i = <span class="number">1</span>,#ARGV</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">    <span class="keyword">local</span> r = redis.call(<span class="string">'GET'</span>,ARGV[i])</span><br><span class="line">    non_exist = (non_exist <span class="keyword">and</span> <span class="keyword">not</span> r)</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="keyword">if</span> non_exist <span class="keyword">then</span></span><br><span class="line">    <span class="keyword">for</span> i = <span class="number">1</span>,#ARGV</span><br><span class="line">    <span class="keyword">do</span></span><br><span class="line">        redis.call(<span class="string">'set'</span>,ARGV[i],<span class="number">1</span>)</span><br><span class="line">        redis.call(<span class="string">'expire'</span>,ARGV[i],<span class="number">60</span>)</span><br><span class="line">    <span class="keyword">end</span></span><br><span class="line">    <span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="keyword">return</span> <span class="literal">false</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">-- unlock.lua</span></span><br><span class="line"><span class="comment">-- 解锁多个资源</span></span><br><span class="line"><span class="keyword">local</span> i = <span class="number">1</span></span><br><span class="line"><span class="keyword">for</span> i = <span class="number">1</span>,#ARGV</span><br><span class="line"><span class="keyword">do</span></span><br><span class="line">    redis.call(<span class="string">'del'</span>,ARGV[i])</span><br><span class="line"><span class="keyword">end</span></span><br><span class="line"><span class="keyword">return</span> <span class="literal">true</span></span><br></pre></td></tr></table></figure>
+<p>然后是Spring中引用lua脚本，生成对应的Bean对象，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RedisLuaConfig</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span>(name = <span class="string">"lock"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> RedisScript&lt;Boolean&gt; <span class="title">lock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        DefaultRedisScript&lt;Boolean&gt; script = <span class="keyword">new</span> DefaultRedisScript&lt;&gt;();</span><br><span class="line">        ScriptSource scriptSource = <span class="keyword">new</span> ResourceScriptSource(<span class="keyword">new</span> ClassPathResource(<span class="string">"lock.lua"</span>));</span><br><span class="line">        script.setScriptSource(scriptSource);</span><br><span class="line">        script.setResultType(Boolean.class);</span><br><span class="line">        <span class="keyword">return</span> script;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Bean</span>(name = <span class="string">"unlock"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> RedisScript&lt;Boolean&gt; <span class="title">unlock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        DefaultRedisScript&lt;Boolean&gt; script = <span class="keyword">new</span> DefaultRedisScript&lt;&gt;();</span><br><span class="line">        ScriptSource scriptSource = <span class="keyword">new</span> ResourceScriptSource(<span class="keyword">new</span> ClassPathResource(<span class="string">"unlock.lua"</span>));</span><br><span class="line">        script.setScriptSource(scriptSource);</span><br><span class="line">        script.setResultType(Boolean.class);</span><br><span class="line">        <span class="keyword">return</span> script;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来是实现抢锁和释放锁服务:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RedisLockService</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String REDIS_KEY = <span class="string">"DUMB_KEY"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Resource</span>(name = <span class="string">"lock"</span>)</span><br><span class="line">    <span class="keyword">private</span> RedisScript&lt;Boolean&gt; lock;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Resource</span>(name = <span class="string">"unlock"</span>)</span><br><span class="line">    <span class="keyword">private</span> RedisScript&lt;Boolean&gt; unlock;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> RedisTemplate&lt;String,Object&gt; redisTemplate;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">lock</span><span class="params">(List&lt;Long&gt; teacherIds)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> redisTemplate.execute(lock, Collections.singletonList(REDIS_KEY),teacherIds.toArray(<span class="keyword">new</span> Object[teacherIds.size()]));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">unlock</span><span class="params">(List&lt;Long&gt; teacherIds)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> redisTemplate.execute(unlock, Collections.singletonList(REDIS_KEY),teacherIds.toArray(<span class="keyword">new</span> Object[teacherIds.size()]));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Resource</span> RedisLockService redisLockService;</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">assignteacher</span><span class="params">(List&lt;Long&gt; teacherIds)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="keyword">if</span>(redisLockService.lock(teacherIds)) &#123;</span><br><span class="line">			<span class="comment">// 上锁成功，则开始计算各个老师对应的课节数</span></span><br><span class="line">			Map&lt;Long, Integer&gt; teacherLessonCountMap = calcTeacherLessonCount();</span><br><span class="line">			<span class="function"><span class="keyword">long</span> selectedTeacher <span class="title">doAssignTeacher</span><span class="params">(teacherLessonCountMap)</span></span>; <span class="comment">// 按照特务规则进行老师分配</span></span><br><span class="line">			doAssign(selectedTeacher); <span class="comment">// 完成具体的分配，主要是底层数据库的变更</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">		redisLockService.unlock(teacherIds);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
       
     </div>
     
@@ -483,8 +536,17 @@ margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-sha
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -546,6 +608,22 @@ margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-sha
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#业务背景"><span class="nav-number">1.</span> <span class="nav-text">业务背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Redis实现"><span class="nav-number">2.</span> <span class="nav-text">Redis实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#解法一：全局加锁"><span class="nav-number">2.1.</span> <span class="nav-text">解法一：全局加锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#解法二：依次加锁"><span class="nav-number">2.2.</span> <span class="nav-text">解法二：依次加锁</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#解法三：多资源同时加锁"><span class="nav-number">2.3.</span> <span class="nav-text">解法三：多资源同时加锁</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       

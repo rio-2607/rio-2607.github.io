@@ -282,7 +282,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2020/06/30/Redis实现多资源分布式锁/" itemprop="url">Redis实现多资源分布式锁</a></h1>
+                <a class="post-title-link" href="/2020/06/30/Redis实现多资源分布式锁/" itemprop="url">Redis Lua实现批量分布式锁</a></h1>
         
 
         <div class="post-meta">
@@ -366,8 +366,12 @@
       
         
           
-          
-          
+          业务背景作为一个线上早教业务，最基础的功能是支持用户下完订单之后在APP上进行自主约课。
+APP上可约课的课程数据由运营同学提前在后台录入好。
+课程数据包括两部分：
+
+老师数据。即老师可上课时间段。比如A老师在周一9:00 ~ 12:00可以上等级为1的课，B老师在周一10:00 ~ 12:00可以
+          ...
           <!--noindex-->
           <div class="post-button text-center">
             <a class="btn" href="/2020/06/30/Redis实现多资源分布式锁/#more" rel="contents">
