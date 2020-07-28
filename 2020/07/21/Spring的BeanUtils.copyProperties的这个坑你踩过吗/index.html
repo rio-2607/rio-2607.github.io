@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="源码分析,Java,Spring,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景最近，组里的一个同学碰到了一个奇怪的Java运行时的问题，找我一块排查下。 排查之后发现是踩了Spring提供的BeanUtils.copyProperties()方法的一个坑，记录一下。 每个用户都有个若干个收货地址，领域对象User定义如下： 12345678910public class User &amp;#123;    /**     * 收货地址     */    private Li">
+<meta name="keywords" content="源码分析,Java,Spring">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spring的BeanUtils.copyProperties的这个坑你踩过吗">
+<meta property="og:url" content="http://yoursite.com/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="背景最近，组里的一个同学碰到了一个奇怪的Java运行时的问题，找我一块排查下。 排查之后发现是踩了Spring提供的BeanUtils.copyProperties()方法的一个坑，记录一下。 每个用户都有个若干个收货地址，领域对象User定义如下： 12345678910public class User &amp;#123;    /**     * 收货地址     */    private Li">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://i.loli.net/2020/07/28/NmlHduEfaLOQPY6.png">
+<meta property="og:image" content="https://i.loli.net/2020/07/28/d6tNJALBKhVXiYl.png">
+<meta property="og:image" content="https://i.loli.net/2020/07/28/QVBA4oK6b2cWzGr.png">
+<meta property="og:updated_time" content="2020-07-28T10:52:35.574Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Spring的BeanUtils.copyProperties的这个坑你踩过吗">
+<meta name="twitter:description" content="背景最近，组里的一个同学碰到了一个奇怪的Java运行时的问题，找我一块排查下。 排查之后发现是踩了Spring提供的BeanUtils.copyProperties()方法的一个坑，记录一下。 每个用户都有个若干个收货地址，领域对象User定义如下： 12345678910public class User &amp;#123;    /**     * 收货地址     */    private Li">
+<meta name="twitter:image" content="https://i.loli.net/2020/07/28/NmlHduEfaLOQPY6.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/">
+
+
+
+
+
+  <title>Spring的BeanUtils.copyProperties的这个坑你踩过吗 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Spring的BeanUtils.copyProperties的这个坑你踩过吗</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2020-07-21T16:40:58+08:00">
+                2020-07-21
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index">
+                    <span itemprop="name">Java</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>最近，组里的一个同学碰到了一个奇怪的Java运行时的问题，找我一块排查下。</p>
+<p>排查之后发现是踩了Spring提供的<code>BeanUtils.copyProperties()</code>方法的一个坑，记录一下。</p>
+<p>每个用户都有个若干个收货地址，领域对象<code>User</code>定义如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">User</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 收货地址</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> List&lt;Address&gt; receiptAddress;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long userId;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Address</code>类定义为:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Address</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String street;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String country;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同时有个<code>UserDTO</code>类和<code>AddressDTO</code>类，定义基本上等同于<code>User</code>类和<code>AddressDTO</code>类：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">UserDTO</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 收货地址</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> List&lt;AddressDTO&gt; receiptAddress;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Long userId;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>Address</code>类定义为:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AddressDTO</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String street;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> String country;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>业务场景中使用如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">(User user)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 把领域对象转换成DTO对象</span></span><br><span class="line">    UserDTO userDTO = UserTransfer.toDTO(user);</span><br><span class="line">    AddressDTO addressDTO = userDTO.getReceiptAddress().get(<span class="number">0</span>);</span><br><span class="line">    doSomething(addressDTO); <span class="comment">// 做一些地址相关的处理</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> UserDTO <span class="title">toDTO</span><span class="params">(User user)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">null</span> == user) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    UserDTO userDTO = <span class="keyword">new</span> UserDTO();</span><br><span class="line">    BeanUtils.copyProperties(user,userDTO);</span><br><span class="line">    <span class="keyword">return</span> userDTO;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>结果执行过程中报错</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java.lang.ClassCastException: com.baicizhan.youziya.kids.account.domain.model.Address cannot be cast to com.baicizhan.youziya.kids.account.common.<span class="keyword">module</span>.dto.AddressDTO</span><br></pre></td></tr></table></figure>
+<p>发生报错的代码是<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AddressDTO addressDTO = userDTO.getReceiptAddress().get(<span class="number">0</span>);</span><br></pre></td></tr></table></figure></p>
+<p>报错原因为<code>Address</code>对象不能被转换成<code>AddressDTO</code>对象。</p>
+<h3 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h3><p>这个报错初看很奇怪，<code>UserDTO</code>里面定义的<code>receiptAddress</code>明明就是<code>AddressDTO</code>类型的列表，从列表中获取第一个元素引用赋值给<code>AddressDTO</code>类型的对象，为什么会出现类型转换呢？感觉有点不科学。</p>
+<p>但是凡事肯定都是有原因的，一步一步debug看看。</p>
+<p><img src="https://i.loli.net/2020/07/28/NmlHduEfaLOQPY6.png" alt="1.png"></p>
+<p>用<code>BeanUtils.copyProperties()</code>方法的本意是把两个对象中属性名相同的属性进行复制，但是现在这现象明显已经偏离了最初的目的。</p>
+<p>debug过程中发现在调用<code>BeanUtils.copyProperties()</code>之后，<code>receiptAddress</code>引用中指向的列表中保存的居然是<code>Address</code>对象，到这里问题就已经发生了。</p>
+<p>为什么会出现这种情况呢？去看看<code>copyProperties()</code>到底怎么实现的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Copy the property values of the given source bean into the target bean.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;Note: The source and target classes do not have to match or even be derived</span></span><br><span class="line"><span class="comment"> * from each other, as long as the properties match. Any bean properties that the</span></span><br><span class="line"><span class="comment"> * source bean exposes but the target bean does not will silently be ignored.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;This is just a convenience method. For more complex transfer needs,</span></span><br><span class="line"><span class="comment"> * consider using a full BeanWrapper.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> source the source bean</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> target the target bean</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> BeansException if the copying failed</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> BeanWrapper</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">copyProperties</span><span class="params">(Object source, Object target)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">	copyProperties(source, target, <span class="keyword">null</span>, (String[]) <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从注释中可以看出，<code>copyProperties()</code>方法会把source对象中的属性值复制给target对象，source和target所属的类不需要有任何关系，只要属性名一致即可。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">copyProperties</span><span class="params">(Object source, Object target, @Nullable Class&lt;?&gt; editable,</span></span></span><br><span class="line"><span class="function"><span class="params">			@Nullable String... ignoreProperties)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line"></span><br><span class="line">	Assert.notNull(source, <span class="string">"Source must not be null"</span>);</span><br><span class="line">	Assert.notNull(target, <span class="string">"Target must not be null"</span>);</span><br><span class="line"></span><br><span class="line">	Class&lt;?&gt; actualEditable = target.getClass();</span><br><span class="line"></span><br><span class="line">	<span class="comment">// ... 一些省略代码</span></span><br><span class="line">        <span class="comment">// 获取到target对象的所有的属性描述符</span></span><br><span class="line">	PropertyDescriptor[] targetPds = getPropertyDescriptors(actualEditable);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 依次处理目标对象的所有需要写入的属性</span></span><br><span class="line">	<span class="keyword">for</span> (PropertyDescriptor targetPd : targetPds) &#123;</span><br><span class="line">                <span class="comment">// 找到对应属性的set方法</span></span><br><span class="line">		Method writeMethod = targetPd.getWriteMethod();</span><br><span class="line">		<span class="keyword">if</span> (writeMethod != <span class="keyword">null</span> &amp;&amp; (ignoreList == <span class="keyword">null</span> || !ignoreList.contains(targetPd.getName()))) &#123;</span><br><span class="line">                        <span class="comment">// 从source对象中找到对应属性名的属性描述符</span></span><br><span class="line">			PropertyDescriptor sourcePd = getPropertyDescriptor(source.getClass(), targetPd.getName());</span><br><span class="line">			<span class="keyword">if</span> (sourcePd != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        <span class="comment">// 如果存在对应的属性，且原始对象中对应的属性值的类型能够被分配给目标对象的目标属性</span></span><br><span class="line">                        <span class="comment">// 则读取原始中对应属性的值，保存在Object对象中，然后调用目标对象的目标属性的</span></span><br><span class="line">                        <span class="comment">// set方法，把对应的值写入到目标对象的目标属性中</span></span><br><span class="line">                        <span class="comment">// 则直接调用</span></span><br><span class="line">			Method readMethod = sourcePd.getReadMethod();</span><br><span class="line">			<span class="keyword">if</span> (readMethod != <span class="keyword">null</span> &amp;&amp;</span><br><span class="line">					ClassUtils.isAssignable(writeMethod.getParameterTypes()[<span class="number">0</span>], readMethod.getReturnType())) &#123;</span><br><span class="line">				<span class="keyword">try</span> &#123;</span><br><span class="line">					<span class="keyword">if</span> (!Modifier.isPublic(readMethod.getDeclaringClass().getModifiers())) &#123;</span><br><span class="line">						readMethod.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">					&#125;</span><br><span class="line">					Object value = readMethod.invoke(source);</span><br><span class="line">					<span class="keyword">if</span> (!Modifier.isPublic(writeMethod.getDeclaringClass().getModifiers())) &#123;</span><br><span class="line">						writeMethod.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">					&#125;</span><br><span class="line">					writeMethod.invoke(target, value);</span><br><span class="line">				&#125;</span><br><span class="line">				<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">					<span class="keyword">throw</span> <span class="keyword">new</span> FatalBeanException(</span><br><span class="line">							<span class="string">"Could not copy property '"</span> + targetPd.getName() + <span class="string">"' from source to target"</span>, ex);</span><br><span class="line">				&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>copyProperties()</code>方法会</p>
+<ol>
+<li>找到target对象的所有可访问属性，然后依次遍历找到的属性</li>
+<li>判断source对象中是否存在对应的属性，且source对象中对应的属性值的类型能够被分配给target对象的目标属性(即类型兼容的)，</li>
+<li>如果存在则读取source对象中对应属性的值，保存在Object对象中，然后调用target对象的目标属性的set方法，把对应的值写入到目标对象的目标属性中。</li>
+</ol>
+<p><code>PropertyDescriptor</code>类用来描述<code>Java Bean</code>对象的属性（属性名、读写方法、属性类型）。</p>
+<p>按照以上分析，来看看对<code>receiptAddress</code>对象复制时的情况：</p>
+<p><img src="https://i.loli.net/2020/07/28/d6tNJALBKhVXiYl.png" alt="2.png"></p>
+<p>可以看到，在处理<code>receiptAddress</code>属性的时候，jdk保存的属性类型(target对象和source对象都是)实际上是<code>java.util.List</code>类型，因为JDK底层已经把具体类型给擦除了（泛型擦除)，</p>
+<p><img src="https://i.loli.net/2020/07/28/QVBA4oK6b2cWzGr.png" alt="3.png"><br><code>copyProperties()</code>发现两者类型一致(都是List)，可直接复制，而value指向的列表中的元素的实际类型为<code>Address</code>也被直接复制过去了。</p>
+<p>所以在<code>BeanUtils.copyProperties()</code>执行完之后，<code>UserDTO</code>对象的<code>receiptAddress</code>属性实际上指向的是<code>Address</code>类型的列表的引用。(因为列表底层类型已经被擦除了，所以不会报错)</p>
+<p>在执行<code>AddressDTO addressDTO = userDTO.getReceiptAddress().get(0);</code>这行代码的时候，JDK发现从<code>receiptAddress</code>列表中读取<code>Address</code>类型的对象之后发现是赋值给<code>AddressDTO</code>类型，则会做一个类型转换，然后就会转换失败报错了。</p>
+<h3 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h3><p>总结一下：由于JDK底层实现的泛型擦除机制，导致在使用<code>BeanUtils.copyProperties()</code>方法复制属性时会出现集合类型的属性的集合元素类型与实际定义类型不一致的情况。</p>
+<p>解法：对于集合类型的属性，显示复制。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> UserDTO <span class="title">toDTO</span><span class="params">(User user)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span>(<span class="keyword">null</span> == user) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    UserDTO userDTO = <span class="keyword">new</span> UserDTO();</span><br><span class="line">    BeanUtils.copyProperties(user,userDTO);</span><br><span class="line">    <span class="keyword">if</span>(CollectionUtils.isNotEmpty(user.getReceiptAddress())) &#123;</span><br><span class="line">        List&lt;AddressDTO&gt; receiptAddress = user.getReceiptAddress().stream()</span><br><span class="line">                .map(a -&gt; &#123;</span><br><span class="line">                    AddressDTO addressDTO = <span class="keyword">new</span> AddressDTO();</span><br><span class="line">                    BeanUtils.copyProperties(a,addressDTO);</span><br><span class="line">                    <span class="keyword">return</span>  addressDTO;</span><br><span class="line">                &#125;)</span><br><span class="line">                .collect(Collectors.toList());</span><br><span class="line">        userDTO.setReceiptAddress(receiptAddress);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> userDTO;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/源码分析/" rel="tag"># 源码分析</a>
+          
+            <a href="/tags/Java/" rel="tag"># Java</a>
+          
+            <a href="/tags/Spring/" rel="tag"># Spring</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/06/30/Redis实现多资源分布式锁/" rel="next" title="Redis Lua实现批量分布式锁">
+                <i class="fa fa-chevron-left"></i> Redis Lua实现批量分布式锁
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">31</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">23</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排查"><span class="nav-number">2.</span> <span class="nav-text">排查</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决"><span class="nav-number">3.</span> <span class="nav-text">解决</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

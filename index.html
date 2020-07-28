@@ -263,7 +263,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/聊一聊Spring中的事务/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Slogen">
@@ -282,7 +282,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2020/07/21/聊一聊Spring中的事务/" itemprop="url">Spring的BeanUtils.copyProperties的坑你踩过吗</a></h1>
+                <a class="post-title-link" href="/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/" itemprop="url">Spring的BeanUtils.copyProperties的这个坑你踩过吗</a></h1>
         
 
         <div class="post-meta">
@@ -335,8 +335,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2020/07/21/聊一聊Spring中的事务/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count valine-comment-count" data-xid="/2020/07/21/聊一聊Spring中的事务/" itemprop="commentCount"></span>
+                <a href="/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -366,11 +366,14 @@
       
         
           
-          
-          
+          背景最近，组里的一个同学碰到了一个奇怪的Java运行时的问题，找我一块排查下。
+排查之后发现是踩了Spring提供的BeanUtils.copyProperties()方法的一个坑，记录一下。
+每个用户都有个若干个收货地址，领域对象User定义如下：
+12345678910public class 
+          ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2020/07/21/聊一聊Spring中的事务/#more" rel="contents">
+            <a class="btn" href="/2020/07/21/Spring的BeanUtils.copyProperties的这个坑你踩过吗/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
