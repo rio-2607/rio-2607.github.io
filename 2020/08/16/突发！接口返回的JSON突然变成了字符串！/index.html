@@ -91,7 +91,7 @@
 <meta property="og:image" content="https://i.loli.net/2020/10/04/Cp9bBJaRWAKou8M.png">
 <meta property="og:image" content="https://i.loli.net/2020/10/04/XRtalnANzJI3621.png">
 <meta property="og:image" content="https://i.loli.net/2020/10/04/HycYwDuJtFsPXqM.png">
-<meta property="og:updated_time" content="2020-10-04T10:13:13.662Z">
+<meta property="og:updated_time" content="2020-10-04T10:45:31.989Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="突发！接口返回的JSON突然变成了字符串！">
 <meta name="twitter:description" content="背景在后端定义接口的时候，后端接口返回一般都是Content-Type=application/json格式的json串。 最近碰到一个问题，负责的一个系统在升级组里的一个公共依赖包common的版本之后，所有的接口返回的Content-Type都由application/json变成了text/html，导致接收端调用解析报错。 把版本修改回去则接口返回的Content-Type即又恢复正常。">
@@ -422,8 +422,8 @@
 <p>综上：</p>
 <p>升级<code>common</code>版本引入<code>JacksonConfig</code>类之后，<code>JacksonConfig</code>中引入了<code>JsonViewSupportFactoryBean</code>工厂对象，<code>JsonViewSupportFactoryBean</code>对象的<code>afterPropertiesSet()</code>方法中会把当前系统中所有类名以<code>MappingJackson2</code>开头的<code>Converter</code>删掉，然后在列表最末尾增加<code>JsonViewMessageConverter</code>。</p>
 <p>SpringBoot框架在计算接口返回<code>MediaType</code>的时候会选择第一个符合要求的<code>MediaType</code>。由于<code>JsonViewSupportFactoryBean</code>打乱了<code>HttpMessageConverter</code>列表的顺序，导致<code>text/html</code>格式的<code>MediaType</code>排在<code>application/json</code>的前面，所以最终接口返回变成了<code>text/html</code>。</p>
-<h3 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h3><p>不通过<code>JsonViewSupportFactoryBean</code>引入<code>JsonViewMessageConverter</code>,改成手动生成，且<code>JsonViewMessageConverter</code>排在<code>BczRequestConfig$HtmlJsonMessageConverter</code>前面即可。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configureMessageConverters</span><span class="params">(List&lt;HttpMessageConverter&lt;?&gt;&gt; converters)</span> </span>&#123;</span><br><span class="line">		 converters.add(<span class="keyword">new</span> JsonViewMessageConverter(mObjectMapper));</span><br><span class="line">		 converters.add(<span class="keyword">new</span> HtmlJsonMessageConverter(mObjectMapper));</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h3><p>不通过<code>JsonViewSupportFactoryBean</code>引入<code>JsonViewMessageConverter</code>,改成手动生成，且<code>JsonViewMessageConverter</code>排在列表最前面即可。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configureMessageConverters</span><span class="params">(List&lt;HttpMessageConverter&lt;?&gt;&gt; converters)</span> </span>&#123;</span><br><span class="line">		 converters.add(<span class="number">0</span>, <span class="keyword">new</span> JsonViewMessageConverter(mObjectMapper));</span><br><span class="line">		 converters.add(<span class="keyword">new</span> HtmlJsonMessageConverter(mObjectMapper));</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
 
       
     </div>
