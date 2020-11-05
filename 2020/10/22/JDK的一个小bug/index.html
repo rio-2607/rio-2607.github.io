@@ -79,18 +79,20 @@
 
 
 
-<meta name="description" content="todo">
+<meta name="description" content="最近线上有一个报错，报错截图如下所示：  主要报错信息为:1Duplicate key 30260887 定位到报错的那一行： 123Map&amp;lt;Long, Long&amp;gt; userOrderMap = lesson.getCourses().stream()				.collect(Collectors.toMap(StudentCourse::getUserId, StudentCours">
 <meta name="keywords" content="Java Spring">
 <meta property="og:type" content="article">
-<meta property="og:title" content="10月份文章">
-<meta property="og:url" content="http://yoursite.com/2020/10/22/10月份文章/index.html">
+<meta property="og:title" content="JDK1.8的一个小bug？">
+<meta property="og:url" content="http://yoursite.com/2020/10/22/JDK的一个小bug/index.html">
 <meta property="og:site_name" content="天凉好个秋">
-<meta property="og:description" content="todo">
+<meta property="og:description" content="最近线上有一个报错，报错截图如下所示：  主要报错信息为:1Duplicate key 30260887 定位到报错的那一行： 123Map&amp;lt;Long, Long&amp;gt; userOrderMap = lesson.getCourses().stream()				.collect(Collectors.toMap(StudentCourse::getUserId, StudentCours">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2020-10-22T13:49:46.938Z">
+<meta property="og:image" content="https://i.loli.net/2020/11/05/y7MitNgDRjGq2HT.png">
+<meta property="og:updated_time" content="2020-11-05T10:35:18.494Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="10月份文章">
-<meta name="twitter:description" content="todo">
+<meta name="twitter:title" content="JDK1.8的一个小bug？">
+<meta name="twitter:description" content="最近线上有一个报错，报错截图如下所示：  主要报错信息为:1Duplicate key 30260887 定位到报错的那一行： 123Map&amp;lt;Long, Long&amp;gt; userOrderMap = lesson.getCourses().stream()				.collect(Collectors.toMap(StudentCourse::getUserId, StudentCours">
+<meta name="twitter:image" content="https://i.loli.net/2020/11/05/y7MitNgDRjGq2HT.png">
 
 
 
@@ -120,13 +122,13 @@
 
 
 
-  <link rel="canonical" href="http://yoursite.com/2020/10/22/10月份文章/">
+  <link rel="canonical" href="http://yoursite.com/2020/10/22/JDK的一个小bug/">
 
 
 
 
 
-  <title>10月份文章 | 天凉好个秋</title>
+  <title>JDK1.8的一个小bug？ | 天凉好个秋</title>
   
 
 
@@ -263,7 +265,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/10/22/10月份文章/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/10/22/JDK的一个小bug/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Slogen">
@@ -280,7 +282,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">10月份文章</h1>
+          <h1 class="post-title" itemprop="name headline">JDK1.8的一个小bug？</h1>
         
 
         <div class="post-meta">
@@ -333,8 +335,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2020/10/22/10月份文章/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count valine-comment-count" data-xid="/2020/10/22/10月份文章/" itemprop="commentCount"></span>
+                <a href="/2020/10/22/JDK的一个小bug/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/10/22/JDK的一个小bug/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -362,7 +364,32 @@
       
 
       
-        <h3 id="todo"><a href="#todo" class="headerlink" title="todo"></a>todo</h3>
+        <p>最近线上有一个报错，报错截图如下所示：</p>
+<p><img src="https://i.loli.net/2020/11/05/y7MitNgDRjGq2HT.png" alt="error.png"></p>
+<p>主要报错信息为:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Duplicate key 30260887</span><br></pre></td></tr></table></figure></p>
+<p>定位到报错的那一行：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Map&lt;Long, Long&gt; userOrderMap = lesson.getCourses().stream()</span><br><span class="line">				.collect(Collectors.toMap(StudentCourse::getUserId, StudentCourse::getOrderId));</span><br><span class="line">lessonDTO.setUserOrderMap(userOrderMap);</span><br></pre></td></tr></table></figure>
+<p><code>lesson.getCourses()</code>返回的是<code>Course</code>对象列表，定义如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Course</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> Long userId;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">private</span> Long orderId;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 其他一些属性</span></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面那句代码要完成的效果是把<code>Course</code>列表中所有的对象转换成<code>&lt;userId, orderId&gt;</code>映射列表，业务上能够保证<code>userId</code>不会重复。</p>
+<p><strong>从报错信息来看，应该是转换成映射的时候作为key的<code>userId</code>重复了，且重复的key为30260887。</strong></p>
+<p>从业务角度来看，应该是底层业务数据出问题了，且是<code>userId=30260887</code>的用户的业务数据有问题。</p>
+<p>直接登录RDS查询这个用户的业务数据，但是很奇怪的是<strong>根据这个userId没有查到任何相应的业务数据</strong>。</p>
+<p>中间费了些时间，最后在Arthas工具的帮助下，定位了真正出错的数据，才发现，</p>
+<p><strong>报错信息中的<code>Duplicate key 30260887</code>中的<code>30260887</code>并不是发生报错时重复的作为key的<code>userId</code>,而是发生错误时的作为value的<code>orderId</code></strong>。</p>
+<p>为了验证这个推断，来看下JDK底层的源码实现。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T, K, U&gt;</span><br><span class="line">  Collector&lt;T, ?, Map&lt;K,U&gt;&gt; toMap(Function&lt;? <span class="keyword">super</span> T, ? extends K&gt; keyMapper,</span><br><span class="line">                                  Function&lt;? <span class="keyword">super</span> T, ? extends U&gt; valueMapper) &#123;</span><br><span class="line">      <span class="keyword">return</span> toMap(keyMapper, valueMapper, throwingMerger(), HashMap::<span class="keyword">new</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>toMap()</code>最终会执行到<code>HashMap.merge()</code>方法，<code>merge()</code>方法是JDK1.8中新增的默认方法，主要用来处理key关联多个value的场景。<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">default</span> V <span class="title">merge</span><span class="params">(K key, V value,</span></span></span><br><span class="line"><span class="function"><span class="params">    BiFunction&lt;? <span class="keyword">super</span> V, ? <span class="keyword">super</span> V, ? extends V&gt; remappingFunction)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// 省略代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>HashMap</code>中的<code>merge()</code>实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> V <span class="title">merge</span><span class="params">(K key, V value,</span></span></span><br><span class="line"><span class="function"><span class="params">               BiFunction&lt;? <span class="keyword">super</span> V, ? <span class="keyword">super</span> V, ? extends V&gt; remappingFunction)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// ......部分省略代码</span></span><br><span class="line">    <span class="keyword">if</span> (old != <span class="keyword">null</span>) &#123;</span><br><span class="line">        V v;</span><br><span class="line">        <span class="keyword">if</span> (old.value != <span class="keyword">null</span>)</span><br><span class="line">            <span class="comment">// 如果key重复了，则调用remappingFunction的apply方法</span></span><br><span class="line">            v = remappingFunction.apply(old.value, value);</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            v = value;</span><br><span class="line">        <span class="keyword">if</span> (v != <span class="keyword">null</span>) &#123;</span><br><span class="line">            old.value = v;</span><br><span class="line">            afterNodeAccess(old);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            removeNode(hash, key, <span class="keyword">null</span>, <span class="keyword">false</span>, <span class="keyword">true</span>);</span><br><span class="line">        <span class="keyword">return</span> v;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ......部分省略代码</span></span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果key重复了，则调用<code>remappingFunction.apply()</code>方法，传入的是<strong>key对应的映射的当前值</strong>以及新值，<br>这里的<code>remappingFunction</code>是<code>toMap</code>方法中的<code>throwingMerger()</code>返回的lambda。</p>
+<p><code>throwingMerger()</code>逻辑如下:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">BinaryOperator&lt;T&gt; <span class="title">throwingMerger</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (u,v) -&gt; &#123; <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(String.format(<span class="string">"Duplicate key %s"</span>, u)); &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>throwingMerger()</code>只是简单的抛出异常，<strong>并且在异常信息中写入第一个参数。而调用的时候传入的第一个参数是<code>Duplicate key</code>对应的当前映射的值</strong>。</p>
+<p>这就验证了上面的猜测。</p>
+<p><strong>从使用角度，和报错的信息<code>Duplicate key</code>关键词来看，这里异常是抛出的异常信息应该是对应的key，而不是key对应的value。</strong></p>
+<p>但是实际上抛出的异常信息为value，我觉得应该是JDK的一个小bug吧。</p>
+<p>虽然对程序本身没什么影响，但是对问题排查可能稍微会有一丢丢的影响。</p>
+
       
     </div>
     
@@ -481,17 +508,8 @@ margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-sha
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview-wrap sidebar-panel">
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -553,22 +571,6 @@ margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-sha
         </div>
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#todo"><span class="nav-number">1.</span> <span class="nav-text">todo</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       

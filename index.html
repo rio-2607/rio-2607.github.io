@@ -263,7 +263,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/10/22/10月份文章/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2020/10/22/JDK的一个小bug/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Slogen">
@@ -282,7 +282,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2020/10/22/10月份文章/" itemprop="url">10月份文章</a></h1>
+                <a class="post-title-link" href="/2020/10/22/JDK的一个小bug/" itemprop="url">JDK1.8的一个小bug？</a></h1>
         
 
         <div class="post-meta">
@@ -335,8 +335,8 @@
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2020/10/22/10月份文章/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count valine-comment-count" data-xid="/2020/10/22/10月份文章/" itemprop="commentCount"></span>
+                <a href="/2020/10/22/JDK的一个小bug/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2020/10/22/JDK的一个小bug/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -366,11 +366,15 @@
       
         
           
-          todo
-          
+          最近线上有一个报错，报错截图如下所示：
+
+主要报错信息为:1Duplicate key 30260887
+定位到报错的那一行：
+123Map&lt;Long, Long&gt; userOrderMap = lesson.getCourses().stream()				.collect(Colle
+          ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2020/10/22/10月份文章/#more" rel="contents">
+            <a class="btn" href="/2020/10/22/JDK的一个小bug/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
