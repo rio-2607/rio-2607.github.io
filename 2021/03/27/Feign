@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Feign 源码,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="前言最近在使用feign发起http请求的时候，碰到了一个问题：由于参数的值中带了大括号导致参数设置没有生效。 事情的背景是这样子的： 最近朋友推荐了一个叫做拉勾教育的APP，类似于极客时间，上面有些挺不错的技术文章，新注册用户有7天的VIP时间，可以免费看所有的技术文章。但是一旦7天之后所有的文章都需要收费。 作为一个背负着房贷车贷被生活压弯了腰的穷困潦倒的中年程序猿，本着能省就省的原则，想着趁">
+<meta name="keywords" content="Feign 源码">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Feign? 带大括号的参数？">
+<meta property="og:url" content="http://yoursite.com/2021/03/27/Feign">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="前言最近在使用feign发起http请求的时候，碰到了一个问题：由于参数的值中带了大括号导致参数设置没有生效。 事情的背景是这样子的： 最近朋友推荐了一个叫做拉勾教育的APP，类似于极客时间，上面有些挺不错的技术文章，新注册用户有7天的VIP时间，可以免费看所有的技术文章。但是一旦7天之后所有的文章都需要收费。 作为一个背负着房贷车贷被生活压弯了腰的穷困潦倒的中年程序猿，本着能省就省的原则，想着趁">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/postman.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/header.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/expression.png">
+<meta property="og:updated_time" content="2021-03-28T05:40:58.591Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Feign? 带大括号的参数？">
+<meta name="twitter:description" content="前言最近在使用feign发起http请求的时候，碰到了一个问题：由于参数的值中带了大括号导致参数设置没有生效。 事情的背景是这样子的： 最近朋友推荐了一个叫做拉勾教育的APP，类似于极客时间，上面有些挺不错的技术文章，新注册用户有7天的VIP时间，可以免费看所有的技术文章。但是一旦7天之后所有的文章都需要收费。 作为一个背负着房贷车贷被生活压弯了腰的穷困潦倒的中年程序猿，本着能省就省的原则，想着趁">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/postman.png">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2021/03/27/Feign">
+
+
+
+
+
+  <title>Feign? 带大括号的参数？ | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2021/03/27/Feign? 带大括号的参数？/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Feign? 带大括号的参数？</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-03-27T16:51:51+08:00">
+                2021-03-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Feign/" itemprop="url" rel="index">
+                    <span itemprop="name">Feign</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2021/03/27/Feign? 带大括号的参数？/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2021/03/27/Feign? 带大括号的参数？/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>最近在使用feign发起http请求的时候，碰到了一个问题：由于参数的值中带了大括号导致参数设置没有生效。</p>
+<p>事情的背景是这样子的：</p>
+<p>最近朋友推荐了一个叫做拉勾教育的APP，类似于极客时间，上面有些挺不错的技术文章，新注册用户有7天的VIP时间，可以免费看所有的技术文章。但是一旦7天之后所有的文章都需要收费。</p>
+<p>作为一个背负着房贷车贷被生活压弯了腰的穷困潦倒的中年程序猿，本着能省就省的原则，想着趁着免费期间把这些文章扒下来转成pdf，留着慢慢学习。</p>
+<h3 id="过程"><a href="#过程" class="headerlink" title="过程"></a>过程</h3><p>说干就干，整个过程思路其实很简单：</p>
+<ol>
+<li>抓包，找到返回文章内容的接口。</li>
+<li>测试接口所需要的参数。</li>
+<li>写代码模拟调用接口，返回文章内容自行处理。</li>
+</ol>
+<p>第一步和第二步很快就做出来了，并且在POSTMAN中测试了下，可以跑通。</p>
+<p><img src="https://raw.githubusercontent.com/rio-2607/photos/master/photos/postman.png" alt="dd"></p>
+<p>其中<code>x-l-req-header</code>这个参数是必须的，不传的话会校验不通过。</p>
+<p>第三步，使用feign作为http client，很快代码也写出来了。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@FeignClient</span>(name = <span class="string">"lagou-service"</span>,url = <span class="string">"拉勾教育服务器地址"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LagouCall</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    String COOKIE = <span class="string">"cookie=抓包获取自己的cookie"</span>;</span><br><span class="line">    String AUTH = <span class="string">"authorization=转包获取自己的authorization"</span>;</span><br><span class="line">    String XLREQHEADER = <span class="string">"x-l-req-header=&#123;\"deviceType\":1&#125;"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@GetMapping</span>(value = <span class="string">"拉勾教育的api"</span>, headers = &#123;</span><br><span class="line">            COOKIE, AUTH,</span><br><span class="line">            XLREQHEADER</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="function">CourseCatalogResponse <span class="title">getCourseCatalog</span><span class="params">(@RequestParam(<span class="string">"courseId"</span>)</span> <span class="keyword">int</span> courseId)</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@RequestMapping</span>(<span class="string">"/api/negols/lagou/edu"</span>)</span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LagouController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> LagouCall lagouCall;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@GetMapping</span>(<span class="string">"/test"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">test</span><span class="params">(@RequestParam(<span class="string">"courseId"</span>)</span> <span class="keyword">int</span> courseId) </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> lagouCall.getCourseCatalog(courseId);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用这个接口返回报错<br><figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="attr">"state"</span>: <span class="number">1003</span>,</span><br><span class="line">  <span class="attr">"message"</span>: <span class="string">"非法的访问"</span>,</span><br><span class="line">  <span class="attr">"content"</span>: <span class="literal">null</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>通过debug发现feign发起http请求的时候实际上没有把<code>x-l-req-header</code>参数传给服务器:</p>
+<p><img src="https://raw.githubusercontent.com/rio-2607/photos/master/photos/header.png" alt="header"></p>
+<p>header里面只包含了<code>authorization</code>和<code>cookie</code>。</p>
+<p>代码中明明设置了<code>x-l-req-header</code>，但是为什么没生效呢？</p>
+<p>还是那句话，源码面前，了无秘密。</p>
+<p>熟悉feign源码的同学应该都知道，feign在启动的时候会在<code>SpringMvcContract.parseHeaders()</code>方法中解析feign client中配置的header数据，并生成对应的<code>HeaderTemplate</code>对象保存在<code>RequestTemplate</code>对象中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">parseHeaders</span><span class="params">(MethodMetadata md, Method method,</span></span></span><br><span class="line"><span class="function"><span class="params">			RequestMapping annotation)</span> </span>&#123;</span><br><span class="line">	<span class="comment">// <span class="doctag">TODO:</span> only supports one header value per key</span></span><br><span class="line">	<span class="keyword">if</span> (annotation.headers() != <span class="keyword">null</span> &amp;&amp; annotation.headers().length &gt; <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="keyword">for</span> (String header : annotation.headers()) &#123;</span><br><span class="line">			<span class="keyword">int</span> index = header.indexOf(<span class="string">'='</span>);</span><br><span class="line">			<span class="keyword">if</span> (!header.contains(<span class="string">"!="</span>) &amp;&amp; index &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">// 生成对应的HeaderTemplate对象保存在RequestTemplate对象中</span></span><br><span class="line">				md.template().header(resolve(header.substring(<span class="number">0</span>, index)),</span><br><span class="line">						resolve(header.substring(index + <span class="number">1</span>).trim()));</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>解析header最终实际上是调用<code>RequestTemplate.appendHeader()</code>方法<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> RequestTemplate <span class="title">appendHeader</span><span class="params">(String name, Iterable&lt;String&gt; values)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (!values.iterator().hasNext()) &#123;</span><br><span class="line">    <span class="comment">/* empty value, clear the existing values */</span></span><br><span class="line">    <span class="keyword">this</span>.headers.remove(name);</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">this</span>.headers.compute(name, (headerName, headerTemplate) -&gt; &#123;</span><br><span class="line">    <span class="keyword">if</span> (headerTemplate == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> HeaderTemplate.create(headerName, values);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> HeaderTemplate.append(headerTemplate, values);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;);</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>HeaderTemplate.create()</code>调用<code>new HeaderTemplate(template.toString(), name, values, Util.UTF_8)</code>生成<code>HeaderTemplate</code>对象，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="title">HeaderTemplate</span><span class="params">(String template, String name, Iterable&lt;String&gt; values, Charset charset)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">super</span>(template, ExpansionOptions.REQUIRED, EncodingOptions.NOT_REQUIRED, <span class="keyword">false</span>, charset);</span><br><span class="line">  <span class="keyword">this</span>.values = StreamSupport.stream(values.spliterator(), <span class="keyword">false</span>)</span><br><span class="line">      .filter(Util::isNotBlank)</span><br><span class="line">      .collect(Collectors.toCollection(LinkedHashSet::<span class="keyword">new</span>));</span><br><span class="line">  <span class="keyword">this</span>.name = name;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>HeaderTemplate</code>构造方法中会先调用父类<code>Template</code>的构造函数<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">Template(</span><br><span class="line">   String value, ExpansionOptions allowUnresolved, EncodingOptions encode, <span class="keyword">boolean</span> encodeSlash,</span><br><span class="line">   Charset charset) &#123;</span><br><span class="line"> <span class="keyword">if</span> (value == <span class="keyword">null</span>) &#123;</span><br><span class="line">   <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"template is required."</span>);</span><br><span class="line"> &#125;</span><br><span class="line"> <span class="keyword">this</span>.template = value;</span><br><span class="line"> <span class="keyword">this</span>.allowUnresolved = ExpansionOptions.ALLOW_UNRESOLVED == allowUnresolved;</span><br><span class="line"> <span class="keyword">this</span>.encode = encode;</span><br><span class="line"> <span class="keyword">this</span>.encodeSlash = encodeSlash;</span><br><span class="line"> <span class="keyword">this</span>.charset = charset;</span><br><span class="line"> <span class="keyword">this</span>.parseTemplate();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在<code>Template()</code>方法中，会调用<code>this.parseTemplate();</code>方法，该方法调用<code>parseFragment()</code>方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">parseFragment</span><span class="params">(String fragment)</span> </span>&#123;</span><br><span class="line">  ChunkTokenizer tokenizer = <span class="keyword">new</span> ChunkTokenizer(fragment);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">while</span> (tokenizer.hasNext()) &#123;</span><br><span class="line">    <span class="comment">/* check to see if we have an expression or a literal */</span></span><br><span class="line">    String chunk = tokenizer.next();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (chunk.startsWith(<span class="string">"&#123;"</span>)) &#123;</span><br><span class="line">      <span class="comment">// 如果参数值(aaa=bbb,aaa是参数名，bbb是参数值)以 &#123; 开始，则认为这是参数值是一个表达式，</span></span><br><span class="line">      <span class="comment">// 则需要把参数值单独记录在templateChunks变量中</span></span><br><span class="line">      Expression expression = Expressions.create(chunk);</span><br><span class="line">      <span class="keyword">if</span> (expression == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">this</span>.templateChunks.add(Literal.create(<span class="keyword">this</span>.encodeLiteral(chunk)));</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.templateChunks.add(expression);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">this</span>.templateChunks.add(Literal.create(<span class="keyword">this</span>.encodeLiteral(chunk)));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面的代码中，可以看到，在形成<code>HeaderTemplate</code>的时候，如果发现参数值是以左大括号{开头的，则认为改参数值是一个表达式，则会把该参数值转换成一个表达式对象<code>Expression</code>保存在<br><code>templateChunks</code>列表中。</p>
+<p><img src="https://raw.githubusercontent.com/rio-2607/photos/master/photos/expression.png" alt="expression"></p>
+<p>feign发起http调用是在<code>SynchronousMethodHandler.invoke()</code>方法中<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">invoke</span><span class="params">(Object[] argv)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">  <span class="comment">// 构造RequestTemplate</span></span><br><span class="line">  RequestTemplate template = buildTemplateFromArgs.create(argv);</span><br><span class="line">  Options options = findOptions(argv);</span><br><span class="line">  Retryer retryer = <span class="keyword">this</span>.retryer.clone();</span><br><span class="line">  <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> executeAndDecode(template, options);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (RetryableException e) &#123;</span><br><span class="line">      <span class="comment">// 省略代码</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><code>invoke()</code>中首先会构造<code>RequestTemplate.Factory</code>工厂类构造<code>RequestTemplate</code>对象，最终会调用到<code>RequestTemplate.resolve()</code>方法:<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  * Resolve all expressions using the variable value substitutions provided. Variable values will</span></span><br><span class="line"><span class="comment">  * be pct-encoded, if they are not already.</span></span><br><span class="line"><span class="comment">  *</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> variables containing the variable values to use when resolving expressions.</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span> a new Request Template with all of the variables resolved.</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> RequestTemplate <span class="title">resolve</span><span class="params">(Map&lt;String, ?&gt; variables)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// ... 省略代码</span></span><br><span class="line"> <span class="comment">/* headers */</span></span><br><span class="line"> <span class="keyword">if</span> (!<span class="keyword">this</span>.headers.isEmpty()) &#123;</span><br><span class="line">   <span class="comment">// 先清空目标RequestTemplate对象的header映射</span></span><br><span class="line">   resolved.headers(Collections.emptyMap());</span><br><span class="line"></span><br><span class="line">   <span class="comment">// 依次遍历所有的headers，调用HeaderTemplate.expand()方法</span></span><br><span class="line">   <span class="comment">// 如果header被认为是表达式，则会执行具体的表达式</span></span><br><span class="line">   <span class="keyword">for</span> (HeaderTemplate headerTemplate : <span class="keyword">this</span>.headers.values()) &#123;</span><br><span class="line">     <span class="comment">/* resolve the header */</span></span><br><span class="line">     <span class="comment">// 解析header，如果是表达式对象，且表达式的值存在的话，则会替换表达式对象</span></span><br><span class="line">     <span class="comment">// variables是定义FeignClient通过RequestParam注解注释的变量</span></span><br><span class="line">     String header = headerTemplate.expand(variables);</span><br><span class="line">     <span class="keyword">if</span> (!header.isEmpty()) &#123;</span><br><span class="line">       <span class="comment">// 如果最终数据不为空，则会把该header放到目标RequestTemplate对象的headers映射表中</span></span><br><span class="line">       String headerValues = header.substring(header.indexOf(<span class="string">" "</span>) + <span class="number">1</span>);</span><br><span class="line">       <span class="keyword">if</span> (!headerValues.isEmpty()) &#123;</span><br><span class="line">         resolved.header(headerTemplate.getName(), headerValues);</span><br><span class="line">       &#125;</span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> <span class="keyword">if</span> (<span class="keyword">this</span>.bodyTemplate != <span class="keyword">null</span>) &#123;</span><br><span class="line">   resolved.body(<span class="keyword">this</span>.bodyTemplate.expand(variables));</span><br><span class="line"> &#125;</span><br><span class="line"></span><br><span class="line"> <span class="comment">/* mark the new template resolved */</span></span><br><span class="line"> resolved.resolved = <span class="keyword">true</span>;</span><br><span class="line"> <span class="keyword">return</span> resolved;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> String <span class="title">expand</span><span class="params">(Map&lt;String, ?&gt; variables)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (variables == <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"variable map is required."</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* resolve all expressions within the template */</span></span><br><span class="line">  StringBuilder resolved = <span class="keyword">null</span>;</span><br><span class="line">  <span class="keyword">for</span> (TemplateChunk chunk : <span class="keyword">this</span>.templateChunks) &#123;</span><br><span class="line">    String expanded;</span><br><span class="line">    <span class="keyword">if</span> (chunk <span class="keyword">instanceof</span> Expression) &#123;</span><br><span class="line">      <span class="comment">// 如果是Expression对象，则调用resolveExpression()方法解析</span></span><br><span class="line">      expanded = <span class="keyword">this</span>.resolveExpression((Expression) chunk, variables);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// ... 其他省略代码</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> resolved.toString();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> String <span class="title">resolveExpression</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">                                     Expression expression,</span></span></span><br><span class="line"><span class="function"><span class="params">                                     Map&lt;String, ?&gt; variables)</span> </span>&#123;</span><br><span class="line">  String resolved = <span class="keyword">null</span>;</span><br><span class="line">  Object value = variables.get(expression.getName());</span><br><span class="line">  <span class="comment">// 从variables中key为找到参数值中大括号包围的值对应的value</span></span><br><span class="line">  <span class="keyword">if</span> (value != <span class="keyword">null</span>) &#123;</span><br><span class="line">    String expanded = expression.expand(</span><br><span class="line">        value, <span class="keyword">this</span>.encode.isEncodingRequired());</span><br><span class="line">    <span class="keyword">if</span> (expanded != <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (!<span class="keyword">this</span>.encodeSlash) &#123;</span><br><span class="line">        logger.fine(<span class="string">"Explicit slash decoding specified, decoding all slashes in uri"</span>);</span><br><span class="line">        expanded = expanded.replaceAll(<span class="string">"%2F"</span>, <span class="string">"/"</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      resolved = expanded;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.allowUnresolved) &#123;</span><br><span class="line">      <span class="comment">/* unresolved variables are treated as literals */</span></span><br><span class="line">      resolved = encodeLiteral(expression.toString());</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> resolved;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从注释中可以看出，<code>resolve()</code>方法主要就是用具体的数据来替换表达式占位符。<br>该方法中，会依次遍历当前的header对象，调用<code>HeaderTemplate.expand()</code>方法来完成表达式的替换(使用定义FeignClient时使用<code>@RequestParam</code>等注解注释的变量,本例中是courseId)，如果替换之后数据不为空的话，则会把对应的header设置到目标<code>RequestTemplate</code>对象的headers映射上去。</p>
+<p>总结一下：feign client定义的参数值(aaa=bbb,aaa是参数名，bbb是参数值)中如果包含了大括号，则feign认为参数名对应的值为表达值，在运行期间会找到以参数值为名字的变量的值来替换，如果没有找到的话则忽略该参数。</p>
+<p>所以在本例中，参数<code>x-l-req-header={&quot;deviceType&quot;:1}</code>中的参数值<code>{&quot;deviceType&quot;:1}</code>包含了大括号，所以参数<code>x-l-req-header</code>具体的值被认为是表达值，在运行期间需要动态替换，但是本例中只设置了<code>courseId</code>这个动态参数，没有设置名为<code>&quot;deviceType&quot;:1</code>的动态参数，所以直接忽略了<code>x-l-req-header</code>这个参数，导致发送到拉勾教育服务器的请求中没有了<code>x-l-req-header</code>这个header。</p>
+<h3 id="解法"><a href="#解法" class="headerlink" title="解法"></a>解法</h3><p>根据上面的分析，可以把<code>x-l-req-header</code>的值设置为动态参数，具体做法如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@FeignClient</span>(name = <span class="string">"lagou-service"</span>,url = <span class="string">"拉勾教育服务器地址"</span>)</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LagouCall</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    String COOKIE = <span class="string">"cookie=抓包获取自己的cookie"</span>;</span><br><span class="line">    String AUTH = <span class="string">"authorization=转包获取自己的authorization"</span>;</span><br><span class="line">    String XLREQHEADER = <span class="string">"x-l-req-header=&#123;xlReqHeader&#125;"</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@GetMapping</span>(value = <span class="string">"拉勾教育的api"</span>, headers = &#123;</span><br><span class="line">            COOKIE, AUTH,</span><br><span class="line">            XLREQHEADER</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="function">CourseCatalogResponse <span class="title">getCourseCatalog</span><span class="params">(@RequestParam(<span class="string">"courseId"</span>)</span> <span class="keyword">int</span> courseId, @<span class="title">RequestParam</span><span class="params">(<span class="string">"xlReqHeader"</span>)</span> String xlReqHeader)</span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@RequestMapping</span>(<span class="string">"/api/negols/lagou/edu"</span>)</span><br><span class="line"><span class="meta">@Slf</span>4j</span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">LagouController</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> LagouCall lagouCall;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@GetMapping</span>(<span class="string">"/test"</span>)</span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">test</span><span class="params">(@RequestParam(<span class="string">"courseId"</span>)</span> <span class="keyword">int</span> courseId) </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> lagouCall.getCourseCatalog(courseId, <span class="string">"&#123;\"deviceType\":1&#125;"</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Feign-源码/" rel="tag"># Feign 源码</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2020/11/15/Skywalking源码分析一/" rel="next" title="Skywalking源码分析一：环境搭建">
+                <i class="fa fa-chevron-left"></i> Skywalking源码分析一：环境搭建
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">36</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">26</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#过程"><span class="nav-number">2.</span> <span class="nav-text">过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解法"><span class="nav-number">3.</span> <span class="nav-text">解法</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
