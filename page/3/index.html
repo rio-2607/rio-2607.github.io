@@ -1540,7 +1540,7 @@ WhatRedis事务提供了一种将多个命令请求打包，然后一次性、�
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/10/Java对象大小/">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/03/10/Netty中的一些小问题/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Slogen">
@@ -1559,7 +1559,7 @@ WhatRedis事务提供了一种将多个命令请求打包，然后一次性、�
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2019/03/10/Java对象大小/" itemprop="url">Java对象大小</a></h1>
+                <a class="post-title-link" href="/2019/03/10/Netty中的一些小问题/" itemprop="url">Netty中的一些小问题</a></h1>
         
 
         <div class="post-meta">
@@ -1612,8 +1612,8 @@ WhatRedis事务提供了一种将多个命令请求打包，然后一次性、�
                 <span class="post-meta-item-icon">
                   <i class="fa fa-comment-o"></i>
                 </span>
-                <a href="/2019/03/10/Java对象大小/#comments" itemprop="discussionUrl">
-                  <span class="post-comments-count valine-comment-count" data-xid="/2019/03/10/Java对象大小/" itemprop="commentCount"></span>
+                <a href="/2019/03/10/Netty中的一些小问题/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2019/03/10/Netty中的一些小问题/" itemprop="commentCount"></span>
                 </a>
               </span>
             
@@ -1643,24 +1643,14 @@ WhatRedis事务提供了一种将多个命令请求打包，然后一次性、�
       
         
           
-          一个Java对象的大小包括下面三个部分
-
-对象头(Header)
-实例数据(Instance Data)
-对齐填充(Padding)
-
-
-对象头(Header)
-
-对象头在32位系统上占用8bytes，在64位系统上占用16bytes。
-
-实例数据(Instance data)
-
-Java中原生类型
+          
+关于isActive()方法：
+  isActive()这个方法在整个流程中都会用到，用来判断对应的链路是否激活。定义如下：
+  1234/** * Return &#123;@code true&#125; if the &#123;@link Channel&#125; is active a
           ...
           <!--noindex-->
           <div class="post-button text-center">
-            <a class="btn" href="/2019/03/10/Java对象大小/#more" rel="contents">
+            <a class="btn" href="/2019/03/10/Netty中的一些小问题/#more" rel="contents">
               阅读全文 &raquo;
             </a>
           </div>
