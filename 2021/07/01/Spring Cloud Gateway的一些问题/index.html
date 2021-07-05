@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+
+
+
+  
+
+
+<html class="theme-next mist use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css">
+
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css">
+
+<link href="/css/main.css?v=5.1.4" rel="stylesheet" type="text/css">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/uploads/favicon-32x32-next.png?v=5.1.4">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/uploads/favicon-16x16-next.png?v=5.1.4">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=5.1.4" color="#222">
+
+
+
+
+
+  <meta name="keywords" content="Java Spring Cloud Gateway,">
+
+
+
+
+
+
+
+
+
+
+<meta name="description" content="背景最近面试了不少同学，有很大一部分简历上会提到网关，我一般都会顺着往下问他们的网关是怎么做的。 基本上都是说直接使用的Spring Cloud Gateway或者基于Spring Cloud Gateway二次开发。 这种时候我会继续问一个比较基础的问题：Spring Cloud Gateway作为网关，会把接收到的请求转发给下游服务，那么Spring Cloud Gateway跟下游的服务之间">
+<meta name="keywords" content="Java Spring Cloud Gateway">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于Spring Cloud Gateway的与下游服务器的连接分析">
+<meta property="og:url" content="http://yoursite.com/2021/07/01/Spring Cloud Gateway的一些问题/index.html">
+<meta property="og:site_name" content="天凉好个秋">
+<meta property="og:description" content="背景最近面试了不少同学，有很大一部分简历上会提到网关，我一般都会顺着往下问他们的网关是怎么做的。 基本上都是说直接使用的Spring Cloud Gateway或者基于Spring Cloud Gateway二次开发。 这种时候我会继续问一个比较基础的问题：Spring Cloud Gateway作为网关，会把接收到的请求转发给下游服务，那么Spring Cloud Gateway跟下游的服务之间">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw1.jpeg">
+<meta property="og:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw2.jpeg">
+<meta property="og:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw3.jpeg">
+<meta property="og:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw4.jpeg">
+<meta property="og:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw5.jpeg">
+<meta property="og:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw7.jpeg">
+<meta property="og:updated_time" content="2021-07-05T09:07:26.289Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="关于Spring Cloud Gateway的与下游服务器的连接分析">
+<meta name="twitter:description" content="背景最近面试了不少同学，有很大一部分简历上会提到网关，我一般都会顺着往下问他们的网关是怎么做的。 基本上都是说直接使用的Spring Cloud Gateway或者基于Spring Cloud Gateway二次开发。 这种时候我会继续问一个比较基础的问题：Spring Cloud Gateway作为网关，会把接收到的请求转发给下游服务，那么Spring Cloud Gateway跟下游的服务之间">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw1.jpeg">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    version: '5.1.4',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: true,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    duoshuo: {
+      userId: '0',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2021/07/01/Spring Cloud Gateway的一些问题/">
+
+
+
+
+
+  <title>关于Spring Cloud Gateway的与下游服务器的连接分析 | 天凉好个秋</title>
+  
+
+
+
+
+
+
+
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta ">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">天凉好个秋</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+      
+        <p class="site-subtitle"></p>
+      
+  </div>
+
+  <div class="site-nav-toggle">
+    <button>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br>
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br>
+            
+            标签
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br>
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br>
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-about">
+          <a href="/about" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-user"></i> <br>
+            
+            关于
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2021/07/01/Spring Cloud Gateway的一些问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Slogen">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/uploads/avatar.jpeg">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="天凉好个秋">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">关于Spring Cloud Gateway的与下游服务器的连接分析</h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2021-07-01T16:19:59+08:00">
+                2021-07-01
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/SpringCloud/" itemprop="url" rel="index">
+                    <span itemprop="name">SpringCloud</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+                <a href="/2021/07/01/Spring Cloud Gateway的一些问题/#comments" itemprop="discussionUrl">
+                  <span class="post-comments-count valine-comment-count" data-xid="/2021/07/01/Spring Cloud Gateway的一些问题/" itemprop="commentCount"></span>
+                </a>
+              </span>
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>最近面试了不少同学，有很大一部分简历上会提到网关，我一般都会顺着往下问他们的网关是怎么做的。</p>
+<p>基本上都是说直接使用的Spring Cloud Gateway或者基于Spring Cloud Gateway二次开发。</p>
+<p>这种时候我会继续问一个比较基础的问题：Spring Cloud Gateway作为网关，会把接收到的请求转发给下游服务，那么Spring Cloud Gateway跟下游的服务之间保持的是长连还是短连？还是说每次转发的时候都会新建立一个连接吗?</p>
+<p>很遗憾的是，这么基础的问题，很少有面试者完全搞清楚。</p>
+<p>所以才有了这篇文章：通过研究Spring Cloud Gateway的源码，来看看Spring Cloud Gateway跟下游服务之间是怎么通信的。</p>
+<h4 id="Spring-Cloud-Gateway"><a href="#Spring-Cloud-Gateway" class="headerlink" title="Spring Cloud Gateway"></a>Spring Cloud Gateway</h4><p>在源码分析之前，需要先了解一下Spring Cloud Gateway</p>
+<p>SpringCloud Gateway 是 Spring Cloud 的一个全新项目，该项目是基于 Spring 5.0，Spring Boot 2.0 和 Project Reactor 等技术开发的网关，它旨在为微服务架构提供一种简单有效的统一的 API 路由管理方式。</p>
+<p>Spring Cloud Gateway是基于Spring WebFlux框架实现的，而WebFlux框架底层则使用了高性能的Reactor模式通信框架Netty。</p>
+<p>Spring Cloud Gateway架构图如下：</p>
+<p><img src="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw1.jpeg" alt="架构"></p>
+<h4 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h4><p>对于基于webflux的应用，入口点都在DispatchHandler.handle()方法:</p>
+<p><img src="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw2.jpeg" alt="2"></p>
+<p><img src="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw3.jpeg" alt="3.png"></p>
+<p>最终执行到SimpleHandlerAdapter.handle() 方法</p>
+<p><img src="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw4.jpeg" alt="4.png"></p>
+<p>handler()方法中执行的是<code>FilteringWebHandler.handle()</code>方法</p>
+<p><img src="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw5.jpeg" alt="5.png"></p>
+<p><code>FilteringWebHandler.handler()</code>方法的主要逻辑就是依次执行已经形成的全局过滤器<code>globalFilter</code>的<code>filter()</code>方法。</p>
+<p>从截图中可以看到，默认会生成9个全局过滤器<code>GatewayFilter</code>对象。</p>
+<p>单步调试下去，发现涉及到网络这一块的操作都在倒数第二个过滤器<code>NettyRoutingFilter</code>类中。</p>
+<p>现在着重来看一下<code>NettyRoutingFilter.filter()</code>方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Mono&lt;Void&gt; <span class="title">filter</span><span class="params">(ServerWebExchange exchange, GatewayFilterChain chain)</span> </span>&#123;</span><br><span class="line">    URI requestUrl = exchange.getRequiredAttribute(GATEWAY_REQUEST_URL_ATTR);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ... 一些省略代码</span></span><br><span class="line">    <span class="comment">// 获取httpclient</span></span><br><span class="line">    Flux&lt;HttpClientResponse&gt; responseFlux = getHttpClient(route, exchange)</span><br><span class="line">            .headers(headers -&gt; &#123;</span><br><span class="line">                headers.add(httpHeaders);</span><br><span class="line">                <span class="comment">// Will either be set below, or later by Netty</span></span><br><span class="line">                headers.remove(HttpHeaders.HOST);</span><br><span class="line">                <span class="keyword">if</span> (preserveHost) &#123;</span><br><span class="line">                    String host = request.getHeaders().getFirst(HttpHeaders.HOST);</span><br><span class="line">                    headers.add(HttpHeaders.HOST, host);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;).request(method).uri(url).send((req, nettyOutbound) -&gt; &#123;</span><br><span class="line">                <span class="keyword">if</span> (log.isTraceEnabled()) &#123;</span><br><span class="line">                    nettyOutbound</span><br><span class="line">                            .withConnection(connection -&gt; log.trace(<span class="string">"outbound route: "</span></span><br><span class="line">                                    + connection.channel().id().asShortText()</span><br><span class="line">                                    + <span class="string">", inbound: "</span> + exchange.getLogPrefix()));</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// 发送请求</span></span><br><span class="line">                <span class="keyword">return</span> nettyOutbound.send(request.getBody().map(<span class="keyword">this</span>::getByteBuf));</span><br><span class="line">            &#125;).responseConnection((res, connection) -&gt; &#123;</span><br><span class="line"></span><br><span class="line">                <span class="comment">// 省略代码，下游请求返回之后做的一些处理</span></span><br><span class="line">                <span class="keyword">return</span> Mono.just(res);</span><br><span class="line">            &#125;);</span><br><span class="line"></span><br><span class="line">    Duration responseTimeout = getResponseTimeout(route);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 一些省略代码</span></span><br><span class="line">    <span class="keyword">return</span> responseFlux.then(chain.filter(exchange));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上面代码的逻辑主要就是</p>
+<ol>
+<li>获取通信用的httpclient</li>
+<li>设置headers，method和url</li>
+<li>执行<code>responseConnection()</code>方法发起连接</li>
+<li>连接成功之后执行send()方法传入的lambda方法。</li>
+<li>执行<code>responseConnection()</code>传入的lambda方法。</li>
+</ol>
+<p>首先来看一下<code>getHttpClient()</code>方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> HttpClient <span class="title">getHttpClient</span><span class="params">(Route route, ServerWebExchange exchange)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 省略代码，timeout设置</span></span><br><span class="line">    <span class="keyword">return</span> httpClient;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>实际上就是直接返回<code>httpClient</code>对象，那么<code>httpClient</code>是在哪里设置的呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">NettyRoutingFilter</span><span class="params">(HttpClient httpClient,</span></span></span><br><span class="line"><span class="function"><span class="params">        ObjectProvider&lt;List&lt;HttpHeadersFilter&gt;&gt; headersFiltersProvider,</span></span></span><br><span class="line"><span class="function"><span class="params">        HttpClientProperties properties)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.httpClient = httpClient;</span><br><span class="line">    <span class="keyword">this</span>.headersFiltersProvider = headersFiltersProvider;</span><br><span class="line">    <span class="keyword">this</span>.properties = properties;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可以看到是在生成<code>NettyRoutingFilter</code>对象的时候传入的，那么<code>NettyRoutingFilter</code>对象在哪里生成的呢？</p>
+<p>答：在<code>GatewayAutoConfiguration</code>类中生成的，这个类是在引入网关的依赖之后自动引入的。</p>
+<p>同样的，<code>HttpClient</code>对象也是在这个类里面生成的。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="meta">@ConditionalOnMissingBean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> HttpClient <span class="title">gatewayHttpClient</span><span class="params">(HttpClientProperties properties,</span></span></span><br><span class="line"><span class="function"><span class="params">        List&lt;HttpClientCustomizer&gt; customizers)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 配置连接池</span></span><br><span class="line">    HttpClientProperties.Pool pool = properties.getPool();</span><br><span class="line"></span><br><span class="line">    ConnectionProvider connectionProvider;</span><br><span class="line">    <span class="keyword">if</span> (pool.getType() == DISABLED) &#123;</span><br><span class="line">        connectionProvider = ConnectionProvider.newConnection();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (pool.getType() == FIXED) &#123;</span><br><span class="line">        connectionProvider = ConnectionProvider.fixed(pool.getName(),</span><br><span class="line">                pool.getMaxConnections(), pool.getAcquireTimeout(),</span><br><span class="line">                pool.getMaxIdleTime(), pool.getMaxLifeTime());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        connectionProvider = ConnectionProvider.elastic(pool.getName(),</span><br><span class="line">                pool.getMaxIdleTime(), pool.getMaxLifeTime());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    HttpClient httpClient = HttpClient.create(connectionProvider)</span><br><span class="line">            <span class="comment">// <span class="doctag">TODO:</span> move customizations to HttpClientCustomizers</span></span><br><span class="line">            .httpResponseDecoder(spec -&gt; &#123;</span><br><span class="line">                <span class="comment">// 省略代码</span></span><br><span class="line">                <span class="keyword">return</span> spec;</span><br><span class="line">            &#125;).tcpConfiguration(tcpClient -&gt; &#123;</span><br><span class="line"></span><br><span class="line">                <span class="comment">// 省略代码</span></span><br><span class="line">                <span class="keyword">return</span> tcpClient;</span><br><span class="line">            &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 省略代码  ssl设置</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> httpClient;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从上面代码可以看出，HttpClient对象自带一个连接池，生成Httpclient的时候首先会配置这个连接池。</p>
+<p>可以看到HttpClient提供的连接池的类型：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">enum</span> PoolType &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 弹性的连接池</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    ELASTIC,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 固定长度的连接池</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    FIXED,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 不使用连接池</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    DISABLED</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>默认使用的是第一种 弹性的连接池</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> PoolType type = PoolType.ELASTIC;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">connectionProvider = ConnectionProvider.elastic(pool.getName(),</span><br><span class="line">						pool.getMaxIdleTime(), pool.getMaxLifeTime());</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> ConnectionProvider <span class="title">elastic</span><span class="params">(String name, @Nullable Duration maxIdleTime, @Nullable Duration maxLifeTime)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> builder(name).maxConnections(Integer.MAX_VALUE) <span class="comment">//设置最大连接数无限制</span></span><br><span class="line">                        .pendingAcquireTimeout(Duration.ofMillis(<span class="number">0</span>))</span><br><span class="line">                        .pendingAcquireMaxCount(-<span class="number">1</span>)</span><br><span class="line">                        .maxIdleTime(maxIdleTime)</span><br><span class="line">                        .maxLifeTime(maxLifeTime)</span><br><span class="line">                        .build();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> Builder <span class="title">builder</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> Builder(name);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在<code>Builder()</code>构造函数中会调用<code>ConnectionPoolSpec()</code>方法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="title">ConnectionPoolSpec</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (DEFAULT_POOL_MAX_IDLE_TIME &gt; -<span class="number">1</span>) &#123;</span><br><span class="line">        maxIdleTime(Duration.ofMillis(DEFAULT_POOL_MAX_IDLE_TIME));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 支持不同类型的链接保存方式</span></span><br><span class="line">    <span class="comment">// lifo和fifo</span></span><br><span class="line">    <span class="keyword">if</span>(LEASING_STRATEGY_LIFO.equals(DEFAULT_POOL_LEASING_STRATEGY)) &#123;</span><br><span class="line">        lifo();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">        fifo();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从代码里面可以看到，httpclient自带的连接池还支持两种连接获取方式：<br>lifo(后进先出)和fifo(先进先出)<br>默认使用的是fifo。</p>
+<p><strong><em>先总结一下，在引入网关的依赖之后，会自动创建一个HttpClient对象，而这个HttpClient对象自带一个连接池，且默认是Elastic连接池，即连接池内的数量会弹性发生变化。<br>连接池内部默认采用fifo的方式来保存以及使用连接</em></strong></p>
+<p>现在重新回到<code>NettyRoutingFilter.filter()</code>方法中来看下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Mono&lt;Void&gt; <span class="title">filter</span><span class="params">(ServerWebExchange exchange, GatewayFilterChain chain)</span> </span>&#123;</span><br><span class="line">    URI requestUrl = exchange.getRequiredAttribute(GATEWAY_REQUEST_URL_ATTR);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ... 一些省略代码</span></span><br><span class="line">    <span class="comment">// 获取httpclient</span></span><br><span class="line">    Flux&lt;HttpClientResponse&gt; responseFlux = getHttpClient(route, exchange)</span><br><span class="line">            .headers(headers -&gt; &#123;</span><br><span class="line">                headers.add(httpHeaders);</span><br><span class="line">                <span class="comment">// Will either be set below, or later by Netty</span></span><br><span class="line">                headers.remove(HttpHeaders.HOST);</span><br><span class="line">                <span class="keyword">if</span> (preserveHost) &#123;</span><br><span class="line">                    String host = request.getHeaders().getFirst(HttpHeaders.HOST);</span><br><span class="line">                    headers.add(HttpHeaders.HOST, host);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;).request(method).uri(url).send((req, nettyOutbound) -&gt; &#123;</span><br><span class="line">                <span class="keyword">if</span> (log.isTraceEnabled()) &#123;</span><br><span class="line">                    nettyOutbound</span><br><span class="line">                            .withConnection(connection -&gt; log.trace(<span class="string">"outbound route: "</span></span><br><span class="line">                                    + connection.channel().id().asShortText()</span><br><span class="line">                                    + <span class="string">", inbound: "</span> + exchange.getLogPrefix()));</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// 发送请求</span></span><br><span class="line">                <span class="keyword">return</span> nettyOutbound.send(request.getBody().map(<span class="keyword">this</span>::getByteBuf));</span><br><span class="line">            &#125;).responseConnection((res, connection) -&gt; &#123;</span><br><span class="line"></span><br><span class="line">                <span class="comment">// 省略代码，下游请求返回之后做的一些处理</span></span><br><span class="line">                <span class="keyword">return</span> Mono.just(res);</span><br><span class="line">            &#125;);</span><br><span class="line"></span><br><span class="line">    Duration responseTimeout = getResponseTimeout(route);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 一些省略代码</span></span><br><span class="line">    <span class="keyword">return</span> responseFlux.then(chain.filter(exchange));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>responseConnection()</code>方法中会发起连接操作:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">final</span> TcpClient cachedConfiguration;</span><br><span class="line"></span><br><span class="line"><span class="meta">@SuppressWarnings</span>(<span class="string">"unchecked"</span>)</span><br><span class="line"><span class="function">Mono&lt;HttpClientOperations&gt; <span class="title">connect</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> (Mono&lt;HttpClientOperations&gt;)cachedConfiguration.connect();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> &lt;V&gt; <span class="function">Flux&lt;V&gt; <span class="title">responseConnection</span><span class="params">(BiFunction&lt;? <span class="keyword">super</span> HttpClientResponse, ? <span class="keyword">super</span> Connection, ? extends Publisher&lt;V&gt;&gt; receiver)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> connect().flatMapMany(resp -&gt; Flux.from(receiver.apply(resp, resp)));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用的是<code>TcpClient</code>对象的<code>connect()</code>方法，一步步断点下去发现最终调用的是<code>TcpClientConnect.connect()</code>方法.</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">final</span> ConnectionProvider provider;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> Mono&lt;? extends Connection&gt; connect(Bootstrap b) &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (b.config()</span><br><span class="line">         .group() == <span class="keyword">null</span>) &#123;</span><br><span class="line"></span><br><span class="line">        TcpClientRunOn.configure(b,</span><br><span class="line">                LoopResources.DEFAULT_NATIVE,</span><br><span class="line">                TcpResources.get());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 这里的provider实际上就是前面分析的创建HttpClient的时候生成的ConnectProvider对象</span></span><br><span class="line">    <span class="keyword">return</span> provider.acquire(b);</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从代码实现中可以看到，实际上<code>TcpClienConnect</code>是直接从<code>ConnectionProvider</code>获取连接。</p>
+<p>看到这里，本文一开始的问题其实已经有解答了：</p>
+<p><strong><em>默认情况下(除非显示设置不使用连接池)，网关在把请求转发给下游服务器的时候，是会使用连接池的，而不是每次都重新发起连接。</em></strong></p>
+<p>继续往下分析。</p>
+<p>对于Elastic类型的连接池来说，其默认实现为<code>PooledConnectionProvider</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// key为远程地址(一般指代一个远程服务),value则对应的ConnectioAllocator</span></span><br><span class="line"><span class="keyword">final</span> ConcurrentMap&lt;PoolKey, InstrumentedPool&lt;PooledConnection&gt;&gt; channelPools =</span><br><span class="line">			PlatformDependent.newConcurrentHashMap();</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Mono&lt;Connection&gt; <span class="title">acquire</span><span class="params">(Bootstrap b)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> Mono.create(sink -&gt; &#123;</span><br><span class="line">        <span class="comment">// ...其他省略代码</span></span><br><span class="line"></span><br><span class="line">        SocketAddress remoteAddress = bootstrap.config().remoteAddress();</span><br><span class="line">        PoolKey holder = <span class="keyword">new</span> PoolKey(remoteAddress, handler != <span class="keyword">null</span> ? handler.hashCode() : -<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 每个远程地址都可以配置一个PoolFactory，如果没配置则使用默认的PoolFactory</span></span><br><span class="line">        PoolFactory poolFactory = poolFactoryPerRemoteHost.getOrDefault(remoteAddress, defaultPoolFactory);</span><br><span class="line">        InstrumentedPool&lt;PooledConnection&gt; pool = channelPools.computeIfAbsent(holder, poolKey -&gt; &#123;</span><br><span class="line">            <span class="keyword">if</span> (log.isDebugEnabled()) &#123;</span><br><span class="line">                log.debug(<span class="string">"Creating a new client pool [&#123;&#125;] for [&#123;&#125;]"</span>, poolFactory, remoteAddress);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// newPool是一个连接分配器，实际上就是一个连接池</span></span><br><span class="line">            InstrumentedPool&lt;PooledConnection&gt; newPool =</span><br><span class="line">                    <span class="keyword">new</span> PooledConnectionAllocator(bootstrap, poolFactory, opsFactory).pool;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (poolFactory.metricsEnabled || BootstrapHandlers.findMetricsSupport(bootstrap) != <span class="keyword">null</span>) &#123;</span><br><span class="line">                PooledConnectionProviderMetrics.registerMetrics(name,</span><br><span class="line">                        poolKey.hashCode() + <span class="string">""</span>,</span><br><span class="line">                        Metrics.formatSocketAddress(remoteAddress),</span><br><span class="line">                        newPool.metrics());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> newPool;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">        disposableAcquire(<span class="keyword">new</span> DisposableAcquire(sink, pool, obs, opsFactory, poolFactory.pendingAcquireTimeout, <span class="keyword">false</span>));</span><br><span class="line"></span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">disposableAcquire</span><span class="params">(DisposableAcquire disposableAcquire)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// accquire一个连接，如果无可用了解则创建，则调用</span></span><br><span class="line">    Mono&lt;PooledRef&lt;PooledConnection&gt;&gt; mono =</span><br><span class="line">            disposableAcquire.pool.acquire(Duration.ofMillis(disposableAcquire.pendingAcquireTimeout));</span><br><span class="line">    mono.subscribe(disposableAcquire);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function">Publisher&lt;PooledConnection&gt; <span class="title">connectChannel</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> Mono.create(sink -&gt; &#123;</span><br><span class="line">        Bootstrap b = bootstrap.clone();</span><br><span class="line">        PooledConnectionInitializer initializer = <span class="keyword">new</span> PooledConnectionInitializer(sink);</span><br><span class="line">        b.handler(initializer);</span><br><span class="line">        <span class="comment">// 创建连接</span></span><br><span class="line">        ChannelFuture f = b.connect();</span><br><span class="line">        <span class="keyword">if</span> (f.isDone()) &#123;</span><br><span class="line">            initializer.operationComplete(f);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            f.addListener(initializer);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从代码里面可以看出，ConnectionProvider对每一个远程地址(即下游服的某一个服务器)都缓存了一个连接分配器(<code>ConnectionAllocator</code>)，而这个<code>ConnectionAllocator</code>才是真正的连接池，是Project Reactor项目内部实现的一个连接池，就不从源码角度分析，简单来说，就是请求方获取连接的时候，如果池子里面有空闲连接，则直接用现成连接，如果没有的话，则调用PoolFactory创建新的链接。</p>
+<p><img src="https://raw.githubusercontent.com/rio-2607/photos/master/photos/gw7.jpeg" alt="7.png"></p>
+<p>总结一下：</p>
+<p>网关内部维持了一个缓存映射，缓存着下游每一个服务地址(ip:port)对应的连接分配器(<code>ConnectionAllocator</code>)，而<code>ConnectionAllocator</code>是一个连接池，内部会保存复用已经生成的连接。</p>
+<p>当网关转发请求时确认下游目标服务的地址，即可直接从对应的连接池中取出连接复用。</p>
+
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+      <div>
+        <div style="padding: 10px 0; margin: 20px auto; width: 90%; text-align: center;">
+  <div>万一打赏了呢^_^</div>
+  <button id="rewardButton" disable="enable" style="width: 80px;line-height: 38px;text-align: center;font-weight: bold;color: #fff;border-radius: 5px;
+margin:0 20px 20px 0;position: relative;overflow: hidden;color: #8c96a0;text-shadow:1px 1px 1px #fff;border:1px solid #dce1e6;box-shadow: 0 1px 2px #fff inset,0 -1px 0 #a8abae inset;background: -webkit-linear-gradient(top,#f2f3f7,#e4e8ec);background: -moz-linear-gradient(top,#f2f3f7,#e4e8ec);background: linear-gradient(top,#f2f3f7,#e4e8ec);" onclick="var qr = document.getElementById('QR'); if (qr.style.display === 'none') {qr.style.display='block';} else {qr.style.display='none'}">
+    打赏
+  </button>
+  <div id="QR" style="display: none;">
+    
+      <div id="wechat" style="display: inline-block;width:150px;height:150px">
+        <img id="wechat_qr" src="/uploads/wechatpay.jpeg" alt="Slogen WeChat Pay">
+        <p>WeChat Pay</p>
+      </div>
+    
+    
+      <div id="alipay" style="display: inline-block;width:150px;height:150px">
+        <img id="alipay_qr" src="/uploads/alipay.jpeg" alt="Slogen Alipay">
+        <p>Alipay</p>
+      </div>
+    
+    
+  </div>
+</div>
+
+      </div>
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Java-Spring-Cloud-Gateway/" rel="tag"># Java Spring Cloud Gateway</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2021/03/27/Feign带大括号的参数/" rel="next" title="Feign?带大括号的参数?">
+                <i class="fa fa-chevron-left"></i> Feign?带大括号的参数?
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+
+          </div>
+          
+
+
+          
+
+  
+    <div class="comments" id="comments">
+    </div>
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <img class="site-author-image" itemprop="image" src="/uploads/avatar.jpeg" alt="Slogen">
+            
+              <p class="site-author-name" itemprop="name">Slogen</p>
+              <p class="site-description motion-element" itemprop="description">不骄不躁，韬光养晦。荣辱不惊，厚积薄发。</p>
+          </div>
+
+          <nav class="site-state motion-element">
+
+            
+              <div class="site-state-item site-state-posts">
+              
+                <a href="/archives">
+              
+                  <span class="site-state-item-count">37</span>
+                  <span class="site-state-item-name">日志</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-categories">
+                <a href="/categories/index.html">
+                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-name">分类</span>
+                </a>
+              </div>
+            
+
+            
+              
+              
+              <div class="site-state-item site-state-tags">
+                <a href="/tags/index.html">
+                  <span class="site-state-item-count">27</span>
+                  <span class="site-state-item-name">标签</span>
+                </a>
+              </div>
+            
+
+          </nav>
+
+          
+
+          
+
+          
+          
+
+          
+          
+
+          
+
+        </div>
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Spring-Cloud-Gateway"><span class="nav-number">1.1.</span> <span class="nav-text">Spring Cloud Gateway</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#源码分析"><span class="nav-number">1.2.</span> <span class="nav-text">源码分析</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Slogen</span>
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a class="theme-link" target="_blank" href="https://hexo.io">Hexo</a> 强力驱动</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 &mdash; <a class="theme-link" target="_blank" href="https://github.com/iissnan/hexo-theme-next">NexT.Mist</a></div>
+
+
+
+
+        
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+  
+
+  
+  
+    <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+  
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.4"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.4"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.4"></script>
+
+
+
+  
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+  <script src="//cdn1.lncld.net/static/js/3.0.4/av-min.js"></script>
+  <script src="//unpkg.com/valine/dist/Valine.min.js"></script>
+  
+  <script type="text/javascript">
+    var GUEST = ['nick','mail','link'];
+    var guest = 'nick,mail,link';
+    guest = guest.split(',').filter(item=>{
+      return GUEST.indexOf(item)>-1;
+    });
+    new Valine({
+        el: '#comments' ,
+        verify: false,
+        notify: false,
+        appId: 'Bb4EcKhqq3La7xJ59ip4Yv8W-gzGzoHsz',
+        appKey: 'LpDWAjNpYUPqyA8rRfxDqfKD',
+        placeholder: '指点江山，激扬文字',
+        avatar:'mm',
+        guest_info:guest,
+        pageSize:'10' || 10,
+    });
+  </script>
+
+
+
+  
+
+
+
+
+
+  
+
+  
+
+  
+
+  
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
